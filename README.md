@@ -1,4 +1,4 @@
-# 📊 Interactive Analytics Dashboard (RCR_Dashboard)
+# 📊 Retail Portfolio Dashboard
 
 A fully interactive analytics dashboard built with **React.js**, **Tailwind CSS**, **Recharts**, and modern JavaScript libraries. Create, customize, and save data visualizations with a drag-and-drop interface.
 

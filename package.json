@@ -1,8 +1,8 @@
 {
-  "name": "analytics-dashboard",
+  "name": "retail-portfolio-dashboard",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://fauzanxdeveloper.github.io/RCR_Dashboard",
+  "homepage": "https://fauzanxdeveloper.github.io/RetailPortfolioDashboard",
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@testing-library/dom": "^10.4.1",
