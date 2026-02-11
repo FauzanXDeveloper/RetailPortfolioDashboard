@@ -3,7 +3,6 @@
  * Manages widgets, data sources, UI state, filters, and persistence.
  */
 import { create } from "zustand";
-import { defaultDataSources } from "../data/sampleData";
 import {
   saveDashboards,
   loadDashboards,
@@ -17,10 +16,8 @@ const useDashboardStore = create((set, get) => ({
   // ─── Data Sources ───
   dataSources: (() => {
     const custom = loadDataSources();
-    // Merge built-in + custom, built-in always included
-    const builtinIds = defaultDataSources.map((ds) => ds.id);
-    const customFiltered = custom.filter((ds) => !builtinIds.includes(ds.id));
-    return [...defaultDataSources, ...customFiltered];
+    // Load only user-added data sources (no built-in sample data)
+    return custom.length > 0 ? custom : [];
   })(),
 
   // ─── Saved Dashboards ───
@@ -33,8 +30,6 @@ const useDashboardStore = create((set, get) => ({
     widgets: [],
     globalFilters: {
       dateRange: { start: "", end: "" },
-      categories: [],
-      regions: [],
       search: "",
       dynamic: [],
     },
@@ -92,8 +87,6 @@ const useDashboardStore = create((set, get) => ({
         ...s.currentDashboard,
         globalFilters: {
           dateRange: { start: "", end: "" },
-          categories: [],
-          regions: [],
           search: "",
           dynamic: (s.currentDashboard.globalFilters?.dynamic || []).map((df) => ({
             ...df,
@@ -258,8 +251,6 @@ const useDashboardStore = create((set, get) => ({
         widgets: [],
         globalFilters: {
           dateRange: { start: "", end: "" },
-          categories: [],
-          regions: [],
           search: "",
           dynamic: [],
         },

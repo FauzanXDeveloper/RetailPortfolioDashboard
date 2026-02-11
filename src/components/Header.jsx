@@ -11,8 +11,6 @@ import {
   Database,
   Search,
   Calendar,
-  Tag,
-  MapPin,
   X,
   ChevronDown,
   FileJson,
@@ -22,7 +20,6 @@ import {
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { importDashboard } from "../utils/storage";
-import { getUniqueValues } from "../utils/dataProcessing";
 import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
 import GlobalFilterManager from "./modals/GlobalFilterManager";
 
@@ -30,7 +27,6 @@ export default function Header() {
   const {
     currentDashboard,
     dashboards,
-    dataSources,
     setDashboardName,
     newDashboard,
     saveDashboard,
@@ -46,14 +42,6 @@ export default function Header() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [showFilterManager, setShowFilterManager] = useState(false);
   const titleRef = useRef(null);
-
-  // Get all categories and regions from all data sources for global filter dropdowns
-  const allCategories = new Set();
-  const allRegions = new Set();
-  dataSources.forEach((ds) => {
-    getUniqueValues(ds.data, "category").forEach((v) => allCategories.add(v));
-    getUniqueValues(ds.data, "region").forEach((v) => allRegions.add(v));
-  });
 
   const handleExportJSON = () => {
     exportAsJSON(currentDashboard);
@@ -290,62 +278,6 @@ export default function Header() {
             }
           />
         </div>
-
-        {/* Category Multi-select */}
-        {[...allCategories].length > 0 && (
-          <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
-            <Tag size={13} className="text-gray-400" />
-            <select
-              multiple
-              className="bg-transparent text-xs outline-none min-w-[100px] max-h-6"
-              value={gf.categories || []}
-              onChange={(e) => {
-                const selected = Array.from(
-                  e.target.selectedOptions,
-                  (o) => o.value
-                );
-                setGlobalFilter("categories", selected);
-              }}
-            >
-              {[...allCategories].map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {(gf.categories?.length > 0) && (
-              <span className="text-xs text-indigo-600">({gf.categories.length})</span>
-            )}
-          </div>
-        )}
-
-        {/* Region Multi-select */}
-        {[...allRegions].length > 0 && (
-          <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
-            <MapPin size={13} className="text-gray-400" />
-            <select
-              multiple
-              className="bg-transparent text-xs outline-none min-w-[80px] max-h-6"
-              value={gf.regions || []}
-              onChange={(e) => {
-                const selected = Array.from(
-                  e.target.selectedOptions,
-                  (o) => o.value
-                );
-                setGlobalFilter("regions", selected);
-              }}
-            >
-              {[...allRegions].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-            {(gf.regions?.length > 0) && (
-              <span className="text-xs text-indigo-600">({gf.regions.length})</span>
-            )}
-          </div>
-        )}
 
         {/* Search */}
         <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">

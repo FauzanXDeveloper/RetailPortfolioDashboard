@@ -157,30 +157,6 @@ export function applyGlobalFilters(data, globalFilters, widgetConfig) {
     }
   }
 
-  // Category filter
-  if (globalFilters.categories?.length > 0) {
-    const catField = Object.keys(data[0] || {}).find(
-      (k) => k.toLowerCase() === "category"
-    );
-    if (catField) {
-      filtered = filtered.filter((row) =>
-        globalFilters.categories.includes(row[catField])
-      );
-    }
-  }
-
-  // Region filter
-  if (globalFilters.regions?.length > 0) {
-    const regField = Object.keys(data[0] || {}).find(
-      (k) => k.toLowerCase() === "region"
-    );
-    if (regField) {
-      filtered = filtered.filter((row) =>
-        globalFilters.regions.includes(row[regField])
-      );
-    }
-  }
-
   // Dynamic filters (user-defined global filters on any column)
   if (globalFilters.dynamic?.length > 0) {
     globalFilters.dynamic.forEach((df) => {
