@@ -3,11 +3,11 @@
  */
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, applyGlobalFilters } from "../../utils/dataProcessing";
+import { filterData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
 import { getColor } from "../../utils/chartHelpers";
 
 export default function SankeyWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const containerRef = useRef(null);
   const [dims, setDims] = useState({ w: 300, h: 200 });
@@ -26,6 +26,7 @@ export default function SankeyWidget({ widget }) {
     if (!ds || !config.sourceField || !config.targetField || !config.valueField) return null;
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     // Aggregate flows
@@ -51,7 +52,7 @@ export default function SankeyWidget({ widget }) {
     nodes.forEach((n, i) => (nodeIndex[n.name] = i));
 
     return { nodes, links: links.map((l) => ({ ...l, sourceIdx: nodeIndex[l.source], targetIdx: nodeIndex[l.target] })) };
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.sourceField || !config.targetField || !config.valueField) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm text-center p-4">Configure source, target, and value fields.</div>;

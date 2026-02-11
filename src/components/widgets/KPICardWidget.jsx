@@ -3,10 +3,10 @@
  */
 import React, { useMemo } from "react";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, computeMetric, applyGlobalFilters, formatValue } from "../../utils/dataProcessing";
+import { filterData, computeMetric, applyGlobalFilters, applyCrossFilters, formatValue } from "../../utils/dataProcessing";
 
 export default function KPICardWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
   const format = config.format || {};
@@ -17,6 +17,7 @@ export default function KPICardWidget({ widget }) {
 
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     const metricValue = computeMetric(data, config.metric, config.aggregation || "sum");
@@ -34,7 +35,7 @@ export default function KPICardWidget({ widget }) {
     }
 
     return { value: metricValue, change, changeLabel };
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.metric) {
     return (

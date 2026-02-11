@@ -7,11 +7,11 @@ import {
   Legend, ResponsiveContainer, ZAxis,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, applyGlobalFilters } from "../../utils/dataProcessing";
+import { filterData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
 import { getColor } from "../../utils/chartHelpers";
 
 export default function ScatterPlotWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
 
@@ -20,6 +20,7 @@ export default function ScatterPlotWidget({ widget }) {
     if (!ds || !config.xAxis || !config.yAxis) return null;
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     // Group by colorBy if specified
@@ -45,7 +46,7 @@ export default function ScatterPlotWidget({ widget }) {
         z: config.sizeField ? Number(row[config.sizeField]) || 1 : 1,
       })),
     };
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.xAxis || !config.yAxis) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm text-center p-4">Configure this widget to see data.<br />Click ⚙️ to set data source and axes.</div>;

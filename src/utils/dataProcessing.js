@@ -135,7 +135,7 @@ export function sortData(data, sortBy, order = "desc", field = null) {
 
 /**
  * Apply global filters to widget data.
- * Global filters: { dateRange: { start, end }, categories: [...], regions: [...], search: '' }
+ * Global filters: { dateRange: { start, end }, categories: [...], regions: [...], search: '', dynamic: [...] }
  */
 export function applyGlobalFilters(data, globalFilters, widgetConfig) {
   if (!widgetConfig?.applyGlobalFilters) return data;
@@ -181,6 +181,16 @@ export function applyGlobalFilters(data, globalFilters, widgetConfig) {
     }
   }
 
+  // Dynamic filters (user-defined global filters on any column)
+  if (globalFilters.dynamic?.length > 0) {
+    globalFilters.dynamic.forEach((df) => {
+      if (!df.field || !df.values?.length) return;
+      filtered = filtered.filter((row) =>
+        df.values.map(String).includes(String(row[df.field]))
+      );
+    });
+  }
+
   // Search filter - search across all text fields
   if (globalFilters.search) {
     const searchLower = globalFilters.search.toLowerCase();
@@ -190,6 +200,74 @@ export function applyGlobalFilters(data, globalFilters, widgetConfig) {
       )
     );
   }
+
+  return filtered;
+}
+
+/**
+ * Apply cross-filters from filter widgets to a target widget's data.
+ * Finds all filter widgets that target this widget, then filters data by their values.
+ * @param {Array} data - The raw data
+ * @param {string} widgetId - The target widget's ID
+ * @param {Array} allWidgets - All widgets in the dashboard
+ * @param {Object} widgetFilterValues - Map of filterWidgetId -> selected value(s)
+ * @returns {Array} Filtered data
+ */
+export function applyCrossFilters(data, widgetId, allWidgets, widgetFilterValues) {
+  if (!data || !allWidgets || !widgetFilterValues) return data;
+
+  let filtered = [...data];
+
+  // Find all filter widgets that target this widget
+  const filterWidgets = allWidgets.filter(
+    (w) =>
+      w.type.includes("filter") &&
+      w.config?.applyTo?.includes(widgetId) &&
+      widgetFilterValues[w.i] !== undefined
+  );
+
+  filterWidgets.forEach((fw) => {
+    const filterValue = widgetFilterValues[fw.i];
+    const filterField = fw.config?.filterField || fw.config?.dateField;
+    if (!filterField) return;
+
+    // Skip "all" value (no filter)
+    if (filterValue === "all" || filterValue === "") return;
+
+    if (Array.isArray(filterValue)) {
+      // Multi-select: keep rows where field is in selected values
+      if (filterValue.length === 0) return;
+      filtered = filtered.filter((row) =>
+        filterValue.map(String).includes(String(row[filterField]))
+      );
+    } else if (typeof filterValue === "object" && filterValue !== null) {
+      // Date range or range object: { start, end } or { min, max }
+      if (filterValue.start && filterValue.end) {
+        filtered = filtered.filter((row) => {
+          const v = row[filterField];
+          return v >= filterValue.start && v <= filterValue.end;
+        });
+      } else if (filterValue.min !== undefined && filterValue.max !== undefined) {
+        filtered = filtered.filter((row) => {
+          const v = Number(row[filterField]);
+          return v >= filterValue.min && v <= filterValue.max;
+        });
+      }
+    } else if (typeof filterValue === "boolean") {
+      // Toggle filter
+      if (filterValue) {
+        filtered = filtered.filter((row) => {
+          const v = row[filterField];
+          return v && v !== "false" && v !== "0" && v !== "";
+        });
+      }
+    } else if (typeof filterValue === "string" && filterValue.trim()) {
+      // Search filter or single dropdown
+      filtered = filtered.filter((row) =>
+        String(row[filterField]).toLowerCase().includes(filterValue.toLowerCase())
+      );
+    }
+  });
 
   return filtered;
 }

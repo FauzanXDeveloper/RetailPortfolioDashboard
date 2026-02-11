@@ -36,6 +36,7 @@ const useDashboardStore = create((set, get) => ({
       categories: [],
       regions: [],
       search: "",
+      dynamic: [],
     },
   },
 
@@ -94,6 +95,10 @@ const useDashboardStore = create((set, get) => ({
           categories: [],
           regions: [],
           search: "",
+          dynamic: (s.currentDashboard.globalFilters?.dynamic || []).map((df) => ({
+            ...df,
+            values: [],
+          })),
         },
       },
     })),
@@ -256,6 +261,7 @@ const useDashboardStore = create((set, get) => ({
           categories: [],
           regions: [],
           search: "",
+          dynamic: [],
         },
       },
       configPanelOpen: false,

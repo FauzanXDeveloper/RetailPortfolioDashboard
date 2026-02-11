@@ -18,11 +18,13 @@ import {
   FileJson,
   Image as ImageIcon,
   FileText,
+  Filter,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { importDashboard } from "../utils/storage";
 import { getUniqueValues } from "../utils/dataProcessing";
 import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
+import GlobalFilterManager from "./modals/GlobalFilterManager";
 
 export default function Header() {
   const {
@@ -42,6 +44,7 @@ export default function Header() {
   const [showLoadDropdown, setShowLoadDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [showFilterManager, setShowFilterManager] = useState(false);
   const titleRef = useRef(null);
 
   // Get all categories and regions from all data sources for global filter dropdowns
@@ -108,7 +111,7 @@ export default function Header() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         {/* Dashboard Title */}
         <div className="flex items-center gap-2">
-          <div className="text-xl font-bold text-indigo-600">📊</div>
+          <img src="/alrajhi_logo.png" alt="Logo" className="h-7 w-auto" />
           {editingTitle ? (
             <input
               ref={titleRef}
@@ -245,6 +248,12 @@ export default function Header() {
           >
             <Database size={14} /> Manage Data
           </button>
+          <button
+            onClick={() => setShowFilterManager(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Filter size={14} /> Manage Filters
+          </button>
         </div>
       </div>
 
@@ -349,6 +358,28 @@ export default function Header() {
           />
         </div>
 
+        {/* Dynamic global filters */}
+        {(gf.dynamic || []).filter((df) => df.values?.length > 0).map((df) => (
+          <div key={df.id || df.field} className="flex items-center gap-1 bg-purple-50 rounded-lg px-2 py-1">
+            <Filter size={13} className="text-purple-400" />
+            <span className="text-xs text-purple-700 font-medium">{df.label || df.field}:</span>
+            <span className="text-xs text-purple-600">
+              {df.values.length <= 2 ? df.values.join(", ") : `${df.values.length} selected`}
+            </span>
+            <button
+              onClick={() => {
+                const updated = (gf.dynamic || []).map((d) =>
+                  d.id === df.id ? { ...d, values: [] } : d
+                );
+                setGlobalFilter("dynamic", updated);
+              }}
+              className="text-purple-400 hover:text-purple-600"
+            >
+              <X size={10} />
+            </button>
+          </div>
+        ))}
+
         {/* Clear All */}
         <button
           onClick={clearGlobalFilters}
@@ -357,6 +388,9 @@ export default function Header() {
           <X size={12} /> Clear All
         </button>
       </div>
+
+      {/* Global Filter Manager Modal */}
+      <GlobalFilterManager open={showFilterManager} onClose={() => setShowFilterManager(false)} />
     </header>
   );
 }

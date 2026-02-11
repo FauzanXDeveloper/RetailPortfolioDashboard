@@ -4,10 +4,10 @@
 import React, { useMemo } from "react";
 import Chart from "react-apexcharts";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, applyGlobalFilters } from "../../utils/dataProcessing";
+import { filterData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
 
 export default function GaugeWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
 
@@ -16,6 +16,7 @@ export default function GaugeWidget({ widget }) {
     if (!ds || !config.metric) return null;
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     const values = data.map((r) => Number(r[config.metric])).filter((v) => !isNaN(v));
@@ -27,7 +28,7 @@ export default function GaugeWidget({ widget }) {
     if (agg === "max") return Math.max(...values);
     if (agg === "count") return values.length;
     return values.reduce((a, b) => a + b, 0);
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.metric) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm text-center p-4">Configure data source and metric.</div>;

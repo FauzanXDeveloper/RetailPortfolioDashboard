@@ -111,12 +111,8 @@ export default function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useDashboardStore();
 
   return (
-    <aside
-      className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 relative z-10 ${
-        sidebarOpen ? "w-60" : "w-0 overflow-hidden"
-      }`}
-    >
-      {/* Toggle button (visible even when closed) */}
+    <div className="relative flex-shrink-0">
+      {/* Toggle button — placed OUTSIDE the aside so it's always visible */}
       <button
         onClick={toggleSidebar}
         className="absolute -right-6 top-3 z-20 w-6 h-10 bg-white border border-gray-200 border-l-0 rounded-r-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
@@ -125,33 +121,39 @@ export default function Sidebar() {
         {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
       </button>
 
-      {sidebarOpen && (
-        <>
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Widget Library
-            </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Drag widgets to the canvas
-            </p>
-          </div>
+      <aside
+        className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 h-full ${
+          sidebarOpen ? "w-60" : "w-0 overflow-hidden"
+        }`}
+      >
+        {sidebarOpen && (
+          <>
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                Widget Library
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Drag widgets to the canvas
+              </p>
+            </div>
 
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
-            {WIDGET_GROUPS.map((group) => (
-              <div key={group.label}>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-1 px-1">
-                  {group.label}
-                </h3>
-                <div className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <DraggableWidgetItem key={item.type} {...item} />
-                  ))}
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
+              {WIDGET_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase mb-1 px-1">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <DraggableWidgetItem key={item.type} {...item} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </aside>
+              ))}
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
   );
 }

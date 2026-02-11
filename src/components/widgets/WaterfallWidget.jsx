@@ -7,10 +7,10 @@ import {
   ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, aggregateData, applyGlobalFilters } from "../../utils/dataProcessing";
+import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
 
 export default function WaterfallWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
 
@@ -19,6 +19,7 @@ export default function WaterfallWidget({ widget }) {
     if (!ds || !config.dimension || !config.measure) return null;
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     const agg = aggregateData(data, config.dimension, config.measure, config.aggregation || "sum");
@@ -51,7 +52,7 @@ export default function WaterfallWidget({ widget }) {
     }
 
     return result;
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.dimension || !config.measure) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm text-center p-4">Configure dimension and measure fields.</div>;

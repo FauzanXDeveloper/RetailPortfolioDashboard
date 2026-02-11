@@ -15,11 +15,11 @@ import {
   LabelList,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, aggregateData, sortData, applyGlobalFilters, limitData } from "../../utils/dataProcessing";
+import { filterData, aggregateData, sortData, applyGlobalFilters, limitData, applyCrossFilters } from "../../utils/dataProcessing";
 import { getColor } from "../../utils/chartHelpers";
 
 export default function BarChartWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
 
@@ -31,6 +31,9 @@ export default function BarChartWidget({ widget }) {
 
     // Apply global filters
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+
+    // Apply cross-filters from filter widgets
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
 
     // Apply widget-level filters
     if (config.filters?.length > 0) {
@@ -54,7 +57,7 @@ export default function BarChartWidget({ widget }) {
     }
 
     return sorted;
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.xAxis || !config.yAxis) {
     return (

@@ -4,10 +4,10 @@
 import React, { useMemo, useState } from "react";
 import { Download, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import useDashboardStore from "../../store/dashboardStore";
-import { filterData, applyGlobalFilters, formatValue } from "../../utils/dataProcessing";
+import { filterData, applyGlobalFilters, applyCrossFilters, formatValue } from "../../utils/dataProcessing";
 
 export default function DataTableWidget({ widget }) {
-  const { dataSources, currentDashboard } = useDashboardStore();
+  const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
   const config = useMemo(() => widget.config || {}, [widget.config]);
   const style = config.style || {};
 
@@ -22,13 +22,14 @@ export default function DataTableWidget({ widget }) {
 
     let data = [...ds.data];
     data = applyGlobalFilters(data, currentDashboard.globalFilters, config);
+    data = applyCrossFilters(data, widget.i, currentDashboard.widgets, widgetFilterValues);
     if (config.filters?.length > 0) data = filterData(data, config.filters);
 
     const allCols = Object.keys(ds.data[0] || {});
     const columns = config.columns?.length > 0 ? config.columns : allCols;
 
     return { tableData: data, columns };
-  }, [dataSources, config, currentDashboard.globalFilters]);
+  }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource) {
     return (
