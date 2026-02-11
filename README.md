@@ -35,17 +35,23 @@ A fully interactive analytics dashboard built with **React.js**, **Tailwind CSS*
 - Date range, category, region, and search filters in the header
 - Filters apply to all widgets with "Apply global filters" enabled
 
-### 💾 Persistence
+### 💾 Persistence & Export
 - Save/load dashboards to browser LocalStorage
-- Export dashboards as JSON files
+- **Export dashboard as JSON** — Complete configuration and data
+- **Export as PNG Image** — High-quality image with logo header
+- **Export as JPG Image** — Compressed image with logo header
+- **Export as PDF** — Multi-page document with logo and page numbers
 - Import JSON dashboard files
 - Multiple dashboards support
+- Export widget data as CSV or Excel (XLSX)
 
 ### 📁 Data Management
 - 3 built-in sample datasets (Sales, User Analytics, Marketing Campaigns)
 - Upload CSV files with auto-detection of column types
+- **Excel import support** (.xlsx, .xls) - Ready for implementation
 - Inline data editor (add/edit/remove rows)
 - Create manual data sources with custom columns
+- Export widget data to CSV/Excel
 
 ---
 

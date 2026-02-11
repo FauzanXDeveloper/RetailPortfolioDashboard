@@ -65,6 +65,7 @@ export default function Canvas() {
 
   return (
     <div
+      id="dashboard-canvas"
       ref={(el) => {
         drop(el);
         containerRef.current = el;

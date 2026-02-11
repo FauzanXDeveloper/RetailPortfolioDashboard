@@ -15,10 +15,14 @@ import {
   MapPin,
   X,
   ChevronDown,
+  FileJson,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { exportDashboard, importDashboard } from "../utils/storage";
 import { getUniqueValues } from "../utils/dataProcessing";
+import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
 
 export default function Header() {
   const {
@@ -36,6 +40,7 @@ export default function Header() {
   } = useDashboardStore();
 
   const [showLoadDropdown, setShowLoadDropdown] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const titleRef = useRef(null);
 
@@ -47,8 +52,37 @@ export default function Header() {
     getUniqueValues(ds.data, "region").forEach((v) => allRegions.add(v));
   });
 
-  const handleExport = () => {
-    exportDashboard(currentDashboard);
+  const handleExportJSON = () => {
+    exportAsJSON(currentDashboard);
+    setShowExportDropdown(false);
+  };
+
+  const handleExportPNG = async () => {
+    await exportAsImage('dashboard-canvas', {
+      format: 'png',
+      includeLogo: true,
+      dashboardTitle: currentDashboard.name,
+    });
+    setShowExportDropdown(false);
+  };
+
+  const handleExportJPG = async () => {
+    await exportAsImage('dashboard-canvas', {
+      format: 'jpg',
+      quality: 0.9,
+      includeLogo: true,
+      dashboardTitle: currentDashboard.name,
+    });
+    setShowExportDropdown(false);
+  };
+
+  const handleExportPDF = async () => {
+    await exportAsPDF('dashboard-canvas', {
+      orientation: 'landscape',
+      includeLogo: true,
+      dashboardTitle: currentDashboard.name,
+    });
+    setShowExportDropdown(false);
   };
 
   const handleImport = async () => {
@@ -146,12 +180,59 @@ export default function Header() {
             )}
           </div>
 
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Download size={14} /> Export
-          </button>
+          {/* Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Download size={14} /> Export <ChevronDown size={12} />
+            </button>
+            {showExportDropdown && (
+              <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <button
+                  onClick={handleExportJSON}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
+                >
+                  <FileJson size={16} className="text-blue-500" />
+                  <div>
+                    <div className="font-medium">Dashboard as JSON</div>
+                    <div className="text-xs text-gray-400">Configuration & data</div>
+                  </div>
+                </button>
+                <button
+                  onClick={handleExportPNG}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
+                >
+                  <ImageIcon size={16} className="text-green-500" />
+                  <div>
+                    <div className="font-medium">Dashboard as PNG</div>
+                    <div className="text-xs text-gray-400">High quality image</div>
+                  </div>
+                </button>
+                <button
+                  onClick={handleExportJPG}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
+                >
+                  <ImageIcon size={16} className="text-yellow-500" />
+                  <div>
+                    <div className="font-medium">Dashboard as JPG</div>
+                    <div className="text-xs text-gray-400">Compressed image</div>
+                  </div>
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <FileText size={16} className="text-red-500" />
+                  <div>
+                    <div className="font-medium">Dashboard as PDF</div>
+                    <div className="text-xs text-gray-400">Multi-page document</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
           <button
             onClick={handleImport}
             className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
