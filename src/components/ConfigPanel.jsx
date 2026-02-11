@@ -13,6 +13,17 @@ import KPICardConfig from "./config/KPICardConfig";
 import DataTableConfig from "./config/DataTableConfig";
 import FilterWidgetConfig from "./config/FilterWidgetConfig";
 import TextBoxConfig from "./config/TextBoxConfig";
+// Advanced Chart Configs
+import ScatterPlotConfig from "./config/ScatterPlotConfig";
+import HeatmapConfig from "./config/HeatmapConfig";
+import GaugeConfig from "./config/GaugeConfig";
+import FunnelConfig from "./config/FunnelConfig";
+import WaterfallConfig from "./config/WaterfallConfig";
+import RadarConfig from "./config/RadarConfig";
+import TreemapConfig from "./config/TreemapConfig";
+import ComboConfig from "./config/ComboConfig";
+import BoxPlotConfig from "./config/BoxPlotConfig";
+import SankeyConfig from "./config/SankeyConfig";
 
 const CONFIG_COMPONENTS = {
   bar: BarChartConfig,
@@ -24,6 +35,23 @@ const CONFIG_COMPONENTS = {
   "dropdown-filter": FilterWidgetConfig,
   "date-range-filter": FilterWidgetConfig,
   text: TextBoxConfig,
+  // Advanced Charts
+  scatter: ScatterPlotConfig,
+  heatmap: HeatmapConfig,
+  gauge: GaugeConfig,
+  funnel: FunnelConfig,
+  waterfall: WaterfallConfig,
+  radar: RadarConfig,
+  treemap: TreemapConfig,
+  combo: ComboConfig,
+  boxplot: BoxPlotConfig,
+  sankey: SankeyConfig,
+  // Enhanced Filters (reuse FilterWidgetConfig)
+  "multiselect-filter": FilterWidgetConfig,
+  "range-slider-filter": FilterWidgetConfig,
+  "search-filter": FilterWidgetConfig,
+  "checkbox-group-filter": FilterWidgetConfig,
+  "toggle-filter": FilterWidgetConfig,
 };
 
 export default function ConfigPanel() {

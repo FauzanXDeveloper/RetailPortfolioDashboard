@@ -3,10 +3,12 @@
  * Lists existing data sources, allows CSV upload, manual data entry, edit/delete.
  */
 import React, { useState, useRef } from "react";
-import { X, Upload, Plus, Trash2, Edit3, FileSpreadsheet } from "lucide-react";
+import { X, Upload, Plus, Trash2, Edit3, FileSpreadsheet, FileJson, Table2, Globe, Wand2 } from "lucide-react";
 import Papa from "papaparse";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
+import ImportPreview from "./ImportPreview";
+import ETLWizard from "./ETLWizard";
 
 export default function DataManager() {
   const {
@@ -18,14 +20,22 @@ export default function DataManager() {
     deleteDataSource,
   } = useDashboardStore();
 
-  const [view, setView] = useState("list"); // list | upload | preview | edit
+  const [view, setView] = useState("list"); // list | upload | preview | edit | importPreview | api
   const [uploadData, setUploadData] = useState(null);
   const [uploadName, setUploadName] = useState("");
+  const [uploadType, setUploadType] = useState("CSV");
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState(null);
   const [manualName, setManualName] = useState("");
   const [manualCols, setManualCols] = useState("name,value");
+  const [showImportDropdown, setShowImportDropdown] = useState(false);
+  const [excelSheets, setExcelSheets] = useState(null);
+  const [excelWorkbook, setExcelWorkbook] = useState(null);
+  const [apiConfig, setApiConfig] = useState({ url: "", method: "GET", headers: "", authType: "none", authValue: "" });
+  const [etlDataSource, setEtlDataSource] = useState(null);
   const fileRef = useRef(null);
+  const excelRef = useRef(null);
+  const jsonRef = useRef(null);
 
   if (!dataManagerOpen) return null;
 
@@ -42,18 +52,150 @@ export default function DataManager() {
     const file = e.target.files[0];
     if (!file) return;
     setUploadName(file.name.replace(/\.csv$/i, ""));
+    setUploadType("CSV");
     Papa.parse(file, {
       header: true,
       dynamicTyping: true,
       skipEmptyLines: true,
       complete: (results) => {
         setUploadData(results.data);
-        setView("upload");
+        setView("importPreview");
       },
       error: (err) => {
         alert("Failed to parse CSV: " + err.message);
       },
     });
+    e.target.value = "";
+  };
+
+  // Excel Upload handler
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadName(file.name.replace(/\.(xlsx?|xls)$/i, ""));
+    setUploadType("Excel");
+    try {
+      const XLSX = await import("xlsx");
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const data = new Uint8Array(ev.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheets = workbook.SheetNames;
+        if (sheets.length > 1) {
+          setExcelWorkbook(workbook);
+          setExcelSheets(sheets);
+          setView("sheetSelect");
+        } else {
+          const ws = workbook.Sheets[sheets[0]];
+          const jsonData = XLSX.utils.sheet_to_json(ws, { defval: "" });
+          setUploadData(jsonData);
+          setView("importPreview");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      alert("Failed to read Excel file: " + err.message);
+    }
+    e.target.value = "";
+  };
+
+  const handleSelectSheet = async (sheetName) => {
+    const XLSX = await import("xlsx");
+    const ws = excelWorkbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    setUploadData(jsonData);
+    setUploadType(`Excel (${sheetName})`);
+    setExcelSheets(null);
+    setExcelWorkbook(null);
+    setView("importPreview");
+  };
+
+  // JSON Upload handler
+  const handleJSONUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadName(file.name.replace(/\.json$/i, ""));
+    setUploadType("JSON");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        let json = JSON.parse(ev.target.result);
+        // If it's an object with an array, find the array
+        if (!Array.isArray(json)) {
+          const keys = Object.keys(json);
+          const arrayKey = keys.find((k) => Array.isArray(json[k]));
+          if (arrayKey) json = json[arrayKey];
+          else json = [json]; // wrap single object in array
+        }
+        if (json.length === 0) {
+          alert("JSON file contains no data.");
+          return;
+        }
+        // Flatten nested objects
+        const flat = json.map((row) => flattenObject(row));
+        setUploadData(flat);
+        setView("importPreview");
+      } catch (err) {
+        alert("Failed to parse JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // API fetch handler
+  const handleAPIFetch = async () => {
+    try {
+      const headers = {};
+      if (apiConfig.headers) {
+        apiConfig.headers.split("\n").forEach((line) => {
+          const [key, ...val] = line.split(":");
+          if (key && val.length) headers[key.trim()] = val.join(":").trim();
+        });
+      }
+      if (apiConfig.authType === "bearer") headers["Authorization"] = `Bearer ${apiConfig.authValue}`;
+      if (apiConfig.authType === "apikey") headers["X-API-Key"] = apiConfig.authValue;
+
+      const res = await fetch(apiConfig.url, { method: apiConfig.method, headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      let json = await res.json();
+
+      if (!Array.isArray(json)) {
+        const keys = Object.keys(json);
+        const arrayKey = keys.find((k) => Array.isArray(json[k]));
+        if (arrayKey) json = json[arrayKey];
+        else json = [json];
+      }
+      const flat = json.map((row) => flattenObject(row));
+      setUploadName("API Data");
+      setUploadType("API");
+      setUploadData(flat);
+      setView("importPreview");
+    } catch (err) {
+      alert("API request failed: " + err.message);
+    }
+  };
+
+  // Flatten nested objects
+  const flattenObject = (obj, prefix = "") => {
+    const result = {};
+    for (const key in obj) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      if (obj[key] && typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+        Object.assign(result, flattenObject(obj[key], fullKey));
+      } else {
+        result[fullKey] = obj[key];
+      }
+    }
+    return result;
+  };
+
+  // Import preview confirm handler
+  const handleImportConfirm = (dataSource) => {
+    addDataSource(dataSource);
+    setView("list");
+    setUploadData(null);
+    setUploadName("");
   };
 
   const handleUploadConfirm = () => {
@@ -154,20 +296,38 @@ export default function DataManager() {
           {view === "list" && (
             <div>
               {/* Actions */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium"
-                >
-                  <Upload size={14} /> Upload CSV
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
+              <div className="flex gap-2 mb-4 relative">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowImportDropdown(!showImportDropdown)}
+                    className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium"
+                  >
+                    <Upload size={14} /> Import Data ▼
+                  </button>
+                  {showImportDropdown && (
+                    <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                      <button onClick={() => { fileRef.current?.click(); setShowImportDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+                        <FileSpreadsheet size={16} className="text-green-600" /> Upload CSV
+                      </button>
+                      <button onClick={() => { excelRef.current?.click(); setShowImportDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+                        <Table2 size={16} className="text-blue-600" /> Upload Excel
+                      </button>
+                      <button onClick={() => { jsonRef.current?.click(); setShowImportDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+                        <FileJson size={16} className="text-yellow-600" /> Upload JSON
+                      </button>
+                      <button onClick={() => { setView("api"); setShowImportDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                        <Globe size={16} className="text-purple-600" /> API Endpoint
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                <input ref={excelRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
+                <input ref={jsonRef} type="file" accept=".json" className="hidden" onChange={handleJSONUpload} />
               </div>
 
               {/* Manual data creation */}
@@ -220,6 +380,13 @@ export default function DataManager() {
                       <td className="py-2 px-2 text-right">{Object.keys(ds.data?.[0] || {}).length}</td>
                       <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => setEtlDataSource(ds)}
+                            className="p-1 hover:bg-purple-100 rounded text-purple-600"
+                            title="Transform (ETL)"
+                          >
+                            <Wand2 size={14} />
+                          </button>
                           <button
                             onClick={() => startEdit(ds.id)}
                             className="p-1 hover:bg-blue-100 rounded text-blue-600"
@@ -390,8 +557,96 @@ export default function DataManager() {
               </div>
             </div>
           )}
+
+          {/* EXCEL SHEET SELECTOR */}
+          {view === "sheetSelect" && excelSheets && (
+            <div>
+              <button onClick={() => { setView("list"); setExcelSheets(null); }}
+                className="text-sm text-indigo-600 hover:text-indigo-800 mb-3">← Back to list</button>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Select a sheet to import:</h3>
+              <div className="space-y-2">
+                {excelSheets.map((sheet) => (
+                  <button key={sheet} onClick={() => handleSelectSheet(sheet)}
+                    className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center gap-2">
+                    <Table2 size={16} className="text-indigo-500" />
+                    <span className="font-medium">{sheet}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* API CONNECTOR VIEW */}
+          {view === "api" && (
+            <div>
+              <button onClick={() => setView("list")} className="text-sm text-indigo-600 hover:text-indigo-800 mb-3">← Back to list</button>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Connect to API Endpoint</h3>
+              <div className="space-y-3 max-w-lg">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">API URL</label>
+                  <input value={apiConfig.url} onChange={(e) => setApiConfig({...apiConfig, url: e.target.value})}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2" placeholder="https://api.example.com/data" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Method</label>
+                  <select value={apiConfig.method} onChange={(e) => setApiConfig({...apiConfig, method: e.target.value})}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Authentication</label>
+                  <select value={apiConfig.authType} onChange={(e) => setApiConfig({...apiConfig, authType: e.target.value})}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 mb-2">
+                    <option value="none">None</option>
+                    <option value="bearer">Bearer Token</option>
+                    <option value="apikey">API Key</option>
+                  </select>
+                  {apiConfig.authType !== "none" && (
+                    <input value={apiConfig.authValue} onChange={(e) => setApiConfig({...apiConfig, authValue: e.target.value})}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2"
+                      placeholder={apiConfig.authType === "bearer" ? "Token value" : "API Key value"} type="password" />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Headers (one per line: Key: Value)</label>
+                  <textarea value={apiConfig.headers} onChange={(e) => setApiConfig({...apiConfig, headers: e.target.value})}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 h-20" placeholder="Content-Type: application/json" />
+                </div>
+                <button onClick={handleAPIFetch} disabled={!apiConfig.url}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                  Fetch Data
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Import Preview (rendered outside modal for proper layering) */}
+      {view === "importPreview" && uploadData && (
+        <ImportPreview
+          data={uploadData}
+          sourceName={uploadName}
+          sourceType={uploadType}
+          onConfirm={handleImportConfirm}
+          onBack={() => setView("list")}
+          onCancel={() => { setView("list"); setUploadData(null); }}
+        />
+      )}
+
+      {/* ETL Wizard */}
+      {etlDataSource && (
+        <ETLWizard
+          dataSource={etlDataSource}
+          onApply={(transformedData) => {
+            updateDataSource(etlDataSource.id, { data: transformedData });
+            setEtlDataSource(null);
+          }}
+          onClose={() => setEtlDataSource(null)}
+        />
+      )}
     </>
   );
 }

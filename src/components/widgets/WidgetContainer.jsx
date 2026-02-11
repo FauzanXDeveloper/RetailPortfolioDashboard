@@ -16,6 +16,23 @@ import DataTableWidget from "./DataTableWidget";
 import DropdownFilterWidget from "./DropdownFilterWidget";
 import DateRangeFilterWidget from "./DateRangeFilterWidget";
 import TextBoxWidget from "./TextBoxWidget";
+// Advanced Charts
+import ScatterPlotWidget from "./ScatterPlotWidget";
+import HeatmapWidget from "./HeatmapWidget";
+import GaugeWidget from "./GaugeWidget";
+import FunnelWidget from "./FunnelWidget";
+import WaterfallWidget from "./WaterfallWidget";
+import RadarWidget from "./RadarWidget";
+import TreemapWidget from "./TreemapWidget";
+import ComboWidget from "./ComboWidget";
+import BoxPlotWidget from "./BoxPlotWidget";
+import SankeyWidget from "./SankeyWidget";
+// Enhanced Filters
+import MultiSelectFilterWidget from "./MultiSelectFilterWidget";
+import RangeSliderFilterWidget from "./RangeSliderFilterWidget";
+import SearchFilterWidget from "./SearchFilterWidget";
+import CheckboxGroupFilterWidget from "./CheckboxGroupFilterWidget";
+import ToggleFilterWidget from "./ToggleFilterWidget";
 
 /** Map widget type string to its component */
 const WIDGET_COMPONENTS = {
@@ -28,6 +45,23 @@ const WIDGET_COMPONENTS = {
   "dropdown-filter": DropdownFilterWidget,
   "date-range-filter": DateRangeFilterWidget,
   text: TextBoxWidget,
+  // Advanced Charts
+  scatter: ScatterPlotWidget,
+  heatmap: HeatmapWidget,
+  gauge: GaugeWidget,
+  funnel: FunnelWidget,
+  waterfall: WaterfallWidget,
+  radar: RadarWidget,
+  treemap: TreemapWidget,
+  combo: ComboWidget,
+  boxplot: BoxPlotWidget,
+  sankey: SankeyWidget,
+  // Enhanced Filters
+  "multiselect-filter": MultiSelectFilterWidget,
+  "range-slider-filter": RangeSliderFilterWidget,
+  "search-filter": SearchFilterWidget,
+  "checkbox-group-filter": CheckboxGroupFilterWidget,
+  "toggle-filter": ToggleFilterWidget,
 };
 
 export default function WidgetContainer({ widget }) {

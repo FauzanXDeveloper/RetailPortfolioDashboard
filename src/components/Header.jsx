@@ -20,7 +20,7 @@ import {
   FileText,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
-import { exportDashboard, importDashboard } from "../utils/storage";
+import { importDashboard } from "../utils/storage";
 import { getUniqueValues } from "../utils/dataProcessing";
 import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
 

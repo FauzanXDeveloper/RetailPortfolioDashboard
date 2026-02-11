@@ -16,6 +16,21 @@ import {
   Type,
   ChevronLeft,
   ChevronRight,
+  ScatterChart,
+  Flame,
+  Gauge,
+  TrendingDown,
+  ArrowDownUp,
+  Radar,
+  TreePine,
+  Layers,
+  BoxSelect,
+  GitBranch,
+  CheckSquare,
+  SlidersHorizontal,
+  Search,
+  ToggleLeft,
+  Tag,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 
@@ -33,10 +48,30 @@ const WIDGET_GROUPS = [
     ],
   },
   {
+    label: "Advanced Charts",
+    items: [
+      { type: "scatter", name: "Scatter Plot", icon: ScatterChart },
+      { type: "heatmap", name: "Heatmap", icon: Flame },
+      { type: "gauge", name: "Gauge", icon: Gauge },
+      { type: "funnel", name: "Funnel Chart", icon: TrendingDown },
+      { type: "waterfall", name: "Waterfall", icon: ArrowDownUp },
+      { type: "radar", name: "Radar Chart", icon: Radar },
+      { type: "treemap", name: "Treemap", icon: TreePine },
+      { type: "combo", name: "Combo Chart", icon: Layers },
+      { type: "boxplot", name: "Box Plot", icon: BoxSelect },
+      { type: "sankey", name: "Sankey Diagram", icon: GitBranch },
+    ],
+  },
+  {
     label: "Filters",
     items: [
       { type: "dropdown-filter", name: "Dropdown Filter", icon: ListFilter },
       { type: "date-range-filter", name: "Date Range Filter", icon: Calendar },
+      { type: "multiselect-filter", name: "Multi-Select", icon: Tag },
+      { type: "range-slider-filter", name: "Range Slider", icon: SlidersHorizontal },
+      { type: "search-filter", name: "Search Filter", icon: Search },
+      { type: "checkbox-group-filter", name: "Checkbox Group", icon: CheckSquare },
+      { type: "toggle-filter", name: "Toggle Filter", icon: ToggleLeft },
     ],
   },
   {

@@ -333,6 +333,23 @@ function getWidgetDefaultTitle(type) {
     "dropdown-filter": "Filter",
     "date-range-filter": "Date Range",
     text: "Text",
+    // Advanced Charts
+    scatter: "Scatter Plot",
+    heatmap: "Heatmap",
+    gauge: "Gauge",
+    funnel: "Funnel Chart",
+    waterfall: "Waterfall Chart",
+    radar: "Radar Chart",
+    treemap: "Treemap",
+    combo: "Combo Chart",
+    boxplot: "Box Plot",
+    sankey: "Sankey Diagram",
+    // Enhanced Filters
+    "multiselect-filter": "Multi-Select Filter",
+    "range-slider-filter": "Range Slider",
+    "search-filter": "Search Filter",
+    "checkbox-group-filter": "Checkbox Filter",
+    "toggle-filter": "Toggle Filter",
   };
   return titles[type] || "Widget";
 }
