@@ -90,6 +90,29 @@ export default function BarChartConfig({ widget }) {
                 </select>
               </div>
 
+              {/* Additional Y-Axis Fields */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Additional Measures</label>
+                {(config.additionalMeasures || []).map((measure, idx) => (
+                  <div key={idx} className="flex gap-1 mb-1">
+                    <select className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 outline-none" value={measure}
+                      onChange={(e) => {
+                        const measures = [...(config.additionalMeasures || [])];
+                        measures[idx] = e.target.value;
+                        update("additionalMeasures", measures);
+                      }}>
+                      {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                    <button className="text-red-400 hover:text-red-600 text-xs px-1" onClick={() => {
+                      update("additionalMeasures", (config.additionalMeasures || []).filter((_, i) => i !== idx));
+                    }}>×</button>
+                  </div>
+                ))}
+                <button className="text-xs text-indigo-600 hover:text-indigo-800" onClick={() => {
+                  update("additionalMeasures", [...(config.additionalMeasures || []), numericFields[0] || ""]);
+                }}>+ Add Measure</button>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Aggregation</label>
                 <select
@@ -184,6 +207,7 @@ export default function BarChartConfig({ widget }) {
       {/* Style Tab */}
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Orientation */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Orientation</label>
             <div className="flex gap-2">
@@ -207,18 +231,108 @@ export default function BarChartConfig({ widget }) {
             onChange={(c) => updateStyle("barColor", c)}
           />
 
+          {/* Font Size */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Font Size</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+              value={style.fontSize || "medium"}
+              onChange={(e) => updateStyle("fontSize", e.target.value)}
+            >
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+              <option value="xlarge">X-Large</option>
+            </select>
+          </div>
+
+          {/* X-Axis Label Angle */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">X-Axis Label Angle: {style.xAxisLabelAngle || 0}°</label>
+            <input type="range" min={-90} max={90} step={15} value={style.xAxisLabelAngle || 0}
+              onChange={(e) => updateStyle("xAxisLabelAngle", Number(e.target.value))} className="w-full" />
+            <div className="flex justify-between text-[10px] text-gray-400">
+              <span>-90° (vertical)</span><span>0°</span><span>90°</span>
+            </div>
+          </div>
+
+          {/* Bar Width */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Bar Width: {style.barWidth || "Auto"}</label>
+            <input type="range" min={0} max={60} value={style.barWidth || 0}
+              onChange={(e) => updateStyle("barWidth", Number(e.target.value) || undefined)} className="w-full" />
+          </div>
+
+          {/* Bar Corner Radius */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Corner Radius: {style.barRadius ?? 4}</label>
+            <input type="range" min={0} max={20} value={style.barRadius ?? 4}
+              onChange={(e) => updateStyle("barRadius", Number(e.target.value))} className="w-full" />
+          </div>
+
+          {/* Y-Axis Width */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Y-Axis Width: {style.yAxisWidth || 60}</label>
+            <input type="range" min={30} max={150} value={style.yAxisWidth || 60}
+              onChange={(e) => updateStyle("yAxisWidth", Number(e.target.value))} className="w-full" />
+          </div>
+
+          <ColorPicker label="Axis Text Color" value={style.axisColor || "#6b7280"} onChange={(c) => updateStyle("axisColor", c)} />
+          <ColorPicker label="Grid Color" value={style.gridColor || "#e5e7eb"} onChange={(c) => updateStyle("gridColor", c)} />
+
+          {/* Legend Position */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Legend Position</label>
+            <div className="flex gap-2">
+              {["bottom", "top"].map((p) => (
+                <label key={p} className="flex items-center gap-1 text-xs">
+                  <input type="radio" name="legendPos" checked={(style.legendPosition || "bottom") === p} onChange={() => updateStyle("legendPosition", p)} />
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Data Label Position */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Data Label Position</label>
+            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+              value={style.dataLabelPosition || "top"} onChange={(e) => updateStyle("dataLabelPosition", e.target.value)}>
+              <option value="top">Top</option>
+              <option value="inside">Inside</option>
+              <option value="insideTop">Inside Top</option>
+              <option value="insideBottom">Inside Bottom</option>
+              <option value="center">Center</option>
+            </select>
+          </div>
+
+          {/* Data Label Size */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Data Label Size: {style.dataLabelSize || 10}</label>
+            <input type="range" min={8} max={18} value={style.dataLabelSize || 10}
+              onChange={(e) => updateStyle("dataLabelSize", Number(e.target.value))} className="w-full" />
+          </div>
+
+          <ColorPicker label="Data Label Color" value={style.dataLabelColor || "#374151"} onChange={(c) => updateStyle("dataLabelColor", c)} />
+
+          {/* Toggle Options */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Show</label>
+            <label className="block text-xs font-medium text-gray-600">Display Options</label>
             {[
               ["showGridLines", "Grid Lines"],
               ["showLegend", "Legend"],
               ["showDataLabels", "Data Labels"],
               ["showAxisTitles", "Axis Titles"],
+              ["showValueFormatted", "Format Values (commas)"],
+              ["dataLabelBold", "Bold Data Labels"],
+              ["stacking", "Stack Bars"],
+              ["gridHorizontal", "Horizontal Grid"],
+              ["gridVertical", "Vertical Grid"],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-xs">
                 <input
                   type="checkbox"
-                  checked={style[key] !== false}
+                  checked={key === "gridHorizontal" || key === "gridVertical" ? style[key] !== false : !!style[key]}
                   onChange={(e) => updateStyle(key, e.target.checked)}
                 />
                 {label}

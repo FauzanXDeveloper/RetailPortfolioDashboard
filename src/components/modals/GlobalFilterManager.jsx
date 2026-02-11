@@ -91,11 +91,11 @@ export default function GlobalFilterManager({ open, onClose }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          {/* Built-in filters info */}
+          {/* Info */}
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
             <p className="text-xs text-blue-700">
-              <strong>Built-in filters</strong> (Date Range, Category, Region, Search) are always available in the header bar.
-              Add custom filters below to filter on any column across all data sources.
+              <strong>Add global filters</strong> below to filter data on any column across all data sources.
+              Filters will immediately appear in the header bar after clicking "Done".
             </p>
           </div>
 

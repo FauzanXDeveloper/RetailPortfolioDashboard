@@ -85,40 +85,96 @@ export default function BarChartWidget({ widget }) {
 
   const isHorizontal = style.orientation === "horizontal";
 
+  // Font size mapping
+  const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
+  const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
+  const labelAngle = style.xAxisLabelAngle || 0;
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={chartData}
         layout={isHorizontal ? "vertical" : "horizontal"}
-        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        margin={{
+          top: style.marginTop ?? 5,
+          right: style.marginRight ?? 20,
+          left: style.marginLeft ?? 10,
+          bottom: labelAngle !== 0 ? 40 : (style.marginBottom ?? 5),
+        }}
       >
-        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
+        {style.showGridLines !== false && (
+          <CartesianGrid
+            strokeDasharray={style.gridDashArray || "3 3"}
+            stroke={style.gridColor || "#e5e7eb"}
+            horizontal={style.gridHorizontal !== false}
+            vertical={style.gridVertical !== false}
+          />
+        )}
         {isHorizontal ? (
           <>
-            <XAxis type="number" tick={{ fontSize: 11 }} />
-            <YAxis dataKey={config.xAxis} type="category" tick={{ fontSize: 11 }} width={80} />
+            <XAxis
+              type="number"
+              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+              label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
+            />
+            <YAxis
+              dataKey={config.xAxis}
+              type="category"
+              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              width={style.yAxisWidth || 80}
+              label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
+            />
           </>
         ) : (
           <>
-            <XAxis dataKey={config.xAxis} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <XAxis
+              dataKey={config.xAxis}
+              tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle" }}
+              height={labelAngle ? 60 : undefined}
+              interval={style.xAxisInterval === "all" ? 0 : undefined}
+              label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: labelAngle ? -30 : -5, fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
+            />
+            <YAxis
+              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+              width={style.yAxisWidth || 60}
+              label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
+            />
           </>
         )}
         <Tooltip
-          contentStyle={{ fontSize: 12, borderRadius: 8 }}
+          contentStyle={{ fontSize, borderRadius: 8, backgroundColor: style.tooltipBg || "#fff", border: "1px solid #e5e7eb" }}
           formatter={(value) => Number(value).toLocaleString()}
         />
-        {style.showLegend !== false && barKeys.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+        {style.showLegend !== false && barKeys.length > 1 && (
+          <Legend
+            wrapperStyle={{ fontSize: fontSize - 1 }}
+            verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
+            align={style.legendAlign || "center"}
+          />
+        )}
         {barKeys.map((key, idx) => (
           <Bar
             key={key}
             dataKey={key}
             fill={isGrouped ? getColor(idx) : (style.barColor || "#4F46E5")}
-            radius={[4, 4, 0, 0]}
+            radius={style.barRadius != null ? [style.barRadius, style.barRadius, 0, 0] : [4, 4, 0, 0]}
             animationDuration={600}
+            barSize={style.barWidth || undefined}
+            stackId={style.stacking ? "stack" : undefined}
           >
             {style.showDataLabels && (
-              <LabelList dataKey={key} position="top" style={{ fontSize: 10 }} />
+              <LabelList
+                dataKey={key}
+                position={style.dataLabelPosition || "top"}
+                style={{
+                  fontSize: style.dataLabelSize || 10,
+                  fill: style.dataLabelColor || "#374151",
+                  fontWeight: style.dataLabelBold ? "bold" : "normal",
+                }}
+                formatter={(v) => style.showValueFormatted ? Number(v).toLocaleString() : v}
+              />
             )}
             {!isGrouped &&
               chartData.map((_, i) => (

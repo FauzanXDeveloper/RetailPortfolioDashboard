@@ -93,8 +93,19 @@ export default function PieChartConfig({ widget }) {
               <input type="range" min={20} max={80} value={style.donutThickness || 60} onChange={(e) => updateStyle("donutThickness", Number(e.target.value))} className="w-full" />
             </div>
           )}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Padding Angle: {style.paddingAngle ?? 2}°</label>
+            <input type="range" min={0} max={10} value={style.paddingAngle ?? 2} onChange={(e) => updateStyle("paddingAngle", Number(e.target.value))} className="w-full" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Label Font Size</label>
+            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.labelFontSize || "medium"} onChange={(e) => updateStyle("labelFontSize", e.target.value)}>
+              <option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option><option value="xlarge">X-Large</option>
+            </select>
+          </div>
           <div className="space-y-2">
-            {[["showLabels", "Labels"], ["showPercentages", "Percentages"], ["showValues", "Values"], ["showLegend", "Legend"]].map(([key, label]) => (
+            <label className="block text-xs font-medium text-gray-600">Display</label>
+            {[["showLabels", "Labels"], ["showPercentages", "Percentages"], ["showValues", "Values (amounts)"], ["showLegend", "Legend"]].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-xs">
                 <input type="checkbox" checked={style[key] !== false} onChange={(e) => updateStyle(key, e.target.checked)} />
                 {label}
@@ -108,6 +119,28 @@ export default function PieChartConfig({ widget }) {
                 <label key={p} className="flex items-center gap-1 text-xs">
                   <input type="radio" name="labelPos" checked={(style.labelPosition || "outside") === p} onChange={() => updateStyle("labelPosition", p)} />
                   {p.charAt(0).toUpperCase() + p.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Legend Position</label>
+            <div className="flex gap-2">
+              {["bottom", "top"].map((p) => (
+                <label key={p} className="flex items-center gap-1 text-xs">
+                  <input type="radio" name="legendPos" checked={(style.legendPosition || "bottom") === p} onChange={() => updateStyle("legendPosition", p)} />
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Legend Layout</label>
+            <div className="flex gap-2">
+              {["horizontal", "vertical"].map((l) => (
+                <label key={l} className="flex items-center gap-1 text-xs">
+                  <input type="radio" name="legendLayout" checked={(style.legendLayout || "horizontal") === l} onChange={() => updateStyle("legendLayout", l)} />
+                  {l.charAt(0).toUpperCase() + l.slice(1)}
                 </label>
               ))}
             </div>

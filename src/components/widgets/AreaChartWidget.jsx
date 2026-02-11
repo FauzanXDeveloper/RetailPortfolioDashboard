@@ -66,15 +66,31 @@ export default function AreaChartWidget({ widget }) {
 
   const stackId = style.stacking === "normal" || style.stacking === "percentage" ? "stack" : undefined;
   const curveType = style.lineStyle === "straight" ? "linear" : style.lineStyle === "step" ? "stepAfter" : "monotone";
+  const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
+  const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
+  const labelAngle = style.xAxisLabelAngle || 0;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis dataKey={config.xAxis} tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => Number(v).toLocaleString()} />
-        {style.showLegend !== false && areaKeys.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+      <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: labelAngle !== 0 ? 40 : 5 }}>
+        {style.showGridLines !== false && (
+          <CartesianGrid strokeDasharray={style.gridDashArray || "3 3"} stroke={style.gridColor || "#e5e7eb"} />
+        )}
+        <XAxis
+          dataKey={config.xAxis}
+          tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle" }}
+          height={labelAngle ? 60 : undefined}
+          label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1 } : undefined}
+        />
+        <YAxis
+          tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+          tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+          label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1 } : undefined}
+        />
+        <Tooltip contentStyle={{ fontSize, borderRadius: 8 }} formatter={(v) => Number(v).toLocaleString()} />
+        {style.showLegend !== false && areaKeys.length > 1 && (
+          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} />
+        )}
         {areaKeys.map((key, idx) => (
           <Area
             key={key}
@@ -85,8 +101,13 @@ export default function AreaChartWidget({ widget }) {
             fillOpacity={style.areaOpacity ?? 0.4}
             strokeWidth={style.lineWidth || 2}
             stackId={stackId}
-            dot={style.showDataPoints ? { r: 3 } : false}
+            dot={style.showDataPoints ? { r: style.dotSize || 3 } : false}
             animationDuration={600}
+            label={style.showDataLabels ? {
+              position: style.dataLabelPosition || "top",
+              fontSize: style.dataLabelSize || 10,
+              fill: style.dataLabelColor || "#374151",
+            } : false}
           />
         ))}
       </AreaChart>

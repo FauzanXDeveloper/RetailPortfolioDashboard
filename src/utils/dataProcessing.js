@@ -135,27 +135,13 @@ export function sortData(data, sortBy, order = "desc", field = null) {
 
 /**
  * Apply global filters to widget data.
- * Global filters: { dateRange: { start, end }, categories: [...], regions: [...], search: '', dynamic: [...] }
+ * Global filters: { search: '', dynamic: [...] }
  */
 export function applyGlobalFilters(data, globalFilters, widgetConfig) {
   if (!widgetConfig?.applyGlobalFilters) return data;
   if (!globalFilters) return data;
 
   let filtered = [...data];
-
-  // Date range filter
-  if (globalFilters.dateRange?.start && globalFilters.dateRange?.end) {
-    const dateFields = Object.keys(data[0] || {}).filter(
-      (k) => k.toLowerCase().includes("date") || k.toLowerCase().includes("time")
-    );
-    if (dateFields.length > 0) {
-      const dateField = dateFields[0];
-      filtered = filtered.filter((row) => {
-        const d = row[dateField];
-        return d >= globalFilters.dateRange.start && d <= globalFilters.dateRange.end;
-      });
-    }
-  }
 
   // Dynamic filters (user-defined global filters on any column)
   if (globalFilters.dynamic?.length > 0) {

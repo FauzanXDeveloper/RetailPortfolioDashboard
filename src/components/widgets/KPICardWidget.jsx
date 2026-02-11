@@ -49,23 +49,58 @@ export default function KPICardWidget({ widget }) {
     compact: "text-xl",
     normal: "text-3xl",
     large: "text-5xl",
+    xlarge: "text-6xl",
+  };
+
+  const alignClasses = {
+    left: "items-start text-left",
+    center: "items-center text-center",
+    right: "items-end text-right",
+  };
+
+  const labelSizeClasses = {
+    small: "text-xs",
+    medium: "text-sm",
+    large: "text-base",
   };
 
   return (
     <div
-      className="flex flex-col items-center justify-center h-full p-2 rounded-lg"
+      className={`flex flex-col ${alignClasses[style.alignment || "center"]} justify-center h-full p-3 rounded-lg`}
       style={{
         backgroundColor: style.backgroundColor || "#ffffff",
         color: style.textColor || "#111827",
+        borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#4F46E5"}` : undefined,
       }}
     >
-      <div className="text-2xl mb-1">{style.icon || "📊"}</div>
-      <div className={`font-bold ${sizeClasses[style.size || "normal"]} tabular-nums`}>
+      {/* Title/Label */}
+      {style.showLabel !== false && config.metric && (
+        <div className={`${labelSizeClasses[style.labelSize || "small"]} text-gray-500 mb-0.5 font-medium`} style={{ color: style.labelColor || "#6b7280" }}>
+          {style.customLabel || config.metric}
+        </div>
+      )}
+      {/* Icon */}
+      {style.showIcon !== false && style.icon && (
+        <div className="mb-1" style={{ fontSize: style.iconSize === "large" ? 32 : style.iconSize === "small" ? 16 : 24 }}>
+          {style.icon}
+        </div>
+      )}
+      {/* Value */}
+      <div
+        className={`font-bold ${sizeClasses[style.size || "normal"]} tabular-nums`}
+        style={{ color: style.valueColor || style.textColor || "#111827" }}
+      >
         {value != null ? formatValue(value, format) : "—"}
       </div>
+      {/* Trend Indicator */}
       {change != null && style.showTrendIndicator !== false && (
         <div className="flex items-center gap-1 mt-1">
-          <span className={`text-sm font-semibold ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <span
+            className="text-sm font-semibold"
+            style={{
+              color: change >= 0 ? (style.positiveColor || "#16a34a") : (style.negativeColor || "#dc2626"),
+            }}
+          >
             {change >= 0 ? "↑" : "↓"}{" "}
             {style.showPercentageChange !== false && `${Math.abs(change).toFixed(1)}%`}
           </span>

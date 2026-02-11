@@ -7,7 +7,7 @@ import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
 
-const EMOJI_OPTIONS = ["📊", "💰", "📈", "📉", "👥", "💵", "🛒", "📦", "🎯", "⚡", "🔥", "❤️", "⭐", "🏆", "📱"];
+const EMOJI_OPTIONS = ["📊", "💰", "📈", "📉", "👥", "💵", "🛒", "📦", "🎯", "⚡", "🔥", "❤️", "⭐", "🏆", "📱", "💎", "🏠", "🚀", "📋", "🔔", "✅", "❌", "🔑", "💼", "🌍", "🔄", "📌", "🏷️", "💡", "🎉"];
 
 export default function KPICardConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -113,17 +113,100 @@ export default function KPICardConfig({ widget }) {
 
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Icon Section */}
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="flex items-center gap-2 text-xs font-medium">
+              <input type="checkbox" checked={style.showIcon !== false} onChange={(e) => updateStyle("showIcon", e.target.checked)} />
+              Show Icon
+            </label>
+            {style.showIcon !== false && (
+              <>
+                <div className="flex flex-wrap gap-1">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button key={e} className={`text-lg p-1 rounded ${style.icon === e ? "bg-indigo-100 ring-2 ring-indigo-400" : "hover:bg-gray-100"}`} onClick={() => updateStyle("icon", e)}>{e}</button>
+                  ))}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Icon Size</label>
+                  <div className="flex gap-2">
+                    {["small", "medium", "large"].map((s) => (
+                      <label key={s} className="flex items-center gap-1 text-xs">
+                        <input type="radio" name="iconSize" checked={(style.iconSize || "medium") === s} onChange={() => updateStyle("iconSize", s)} />
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Or type custom icon/text</label>
+                  <input className="w-full text-xs border border-gray-200 rounded px-2 py-1 outline-none" value={style.icon || ""} onChange={(e) => updateStyle("icon", e.target.value)} placeholder="Emoji or text..." />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Label Section */}
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="flex items-center gap-2 text-xs font-medium">
+              <input type="checkbox" checked={style.showLabel !== false} onChange={(e) => updateStyle("showLabel", e.target.checked)} />
+              Show Label
+            </label>
+            {style.showLabel !== false && (
+              <>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Custom Label</label>
+                  <input className="w-full text-xs border border-gray-200 rounded px-2 py-1 outline-none" value={style.customLabel || ""} onChange={(e) => updateStyle("customLabel", e.target.value)} placeholder="Default: field name" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-0.5">Label Size</label>
+                  <div className="flex gap-2">
+                    {["small", "medium", "large"].map((s) => (
+                      <label key={s} className="flex items-center gap-1 text-xs">
+                        <input type="radio" name="labelSize" checked={(style.labelSize || "small") === s} onChange={() => updateStyle("labelSize", s)} />
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <ColorPicker label="Label Color" value={style.labelColor || "#6b7280"} onChange={(c) => updateStyle("labelColor", c)} />
+              </>
+            )}
+          </div>
+
+          {/* Colors */}
+          <ColorPicker label="Background Color" value={style.backgroundColor || "#ffffff"} onChange={(c) => updateStyle("backgroundColor", c)} />
+          <ColorPicker label="Value Color" value={style.valueColor || "#111827"} onChange={(c) => updateStyle("valueColor", c)} />
+          <ColorPicker label="Text Color" value={style.textColor || "#111827"} onChange={(c) => updateStyle("textColor", c)} />
+          <ColorPicker label="Positive Color" value={style.positiveColor || "#16a34a"} onChange={(c) => updateStyle("positiveColor", c)} />
+          <ColorPicker label="Negative Color" value={style.negativeColor || "#dc2626"} onChange={(c) => updateStyle("negativeColor", c)} />
+
+          {/* Accent Border */}
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="flex items-center gap-2 text-xs font-medium">
+              <input type="checkbox" checked={!!style.accentBorder} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
+              Accent Border (left)
+            </label>
+            {style.accentBorder && (
+              <ColorPicker label="Accent Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
+            )}
+          </div>
+
+          {/* Alignment */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Icon</label>
-            <div className="flex flex-wrap gap-1">
-              {EMOJI_OPTIONS.map((e) => (
-                <button key={e} className={`text-lg p-1 rounded ${style.icon === e ? "bg-indigo-100 ring-2 ring-indigo-400" : "hover:bg-gray-100"}`} onClick={() => updateStyle("icon", e)}>{e}</button>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Alignment</label>
+            <div className="flex gap-2">
+              {["left", "center", "right"].map((a) => (
+                <label key={a} className="flex items-center gap-1 text-xs">
+                  <input type="radio" name="alignment" checked={(style.alignment || "center") === a} onChange={() => updateStyle("alignment", a)} />
+                  {a.charAt(0).toUpperCase() + a.slice(1)}
+                </label>
               ))}
             </div>
           </div>
-          <ColorPicker label="Background Color" value={style.backgroundColor || "#ffffff"} onChange={(c) => updateStyle("backgroundColor", c)} />
-          <ColorPicker label="Text Color" value={style.textColor || "#111827"} onChange={(c) => updateStyle("textColor", c)} />
+
+          {/* Toggle Options */}
           <div className="space-y-2">
+            <label className="block text-xs font-medium text-gray-600">Display</label>
             {[["showTrendIndicator", "Trend Indicator (↑/↓)"], ["showPercentageChange", "Percentage Change"], ["showComparisonLabel", "Comparison Label"]].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-xs">
                 <input type="checkbox" checked={style[key] !== false} onChange={(e) => updateStyle(key, e.target.checked)} />
@@ -131,13 +214,15 @@ export default function KPICardConfig({ widget }) {
               </label>
             ))}
           </div>
+
+          {/* Value Size */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Size</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Value Size</label>
             <div className="flex gap-2">
-              {["compact", "normal", "large"].map((s) => (
+              {["compact", "normal", "large", "xlarge"].map((s) => (
                 <label key={s} className="flex items-center gap-1 text-xs">
                   <input type="radio" name="size" checked={(style.size || "normal") === s} onChange={() => updateStyle("size", s)} />
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                  {s === "xlarge" ? "XL" : s.charAt(0).toUpperCase() + s.slice(1)}
                 </label>
               ))}
             </div>

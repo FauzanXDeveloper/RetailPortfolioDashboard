@@ -1,9 +1,9 @@
 /**
  * WidgetContainer — Base wrapper for all widgets on the canvas.
- * Provides drag handle, title, settings & delete buttons, and resize handle.
+ * Provides drag handle, title, settings & delete buttons, pin/unpin, and resize handle.
  */
 import React, { useState } from "react";
-import { Settings, X, GripVertical } from "lucide-react";
+import { Settings, X, GripVertical, Pin, PinOff } from "lucide-react";
 import useDashboardStore from "../../store/dashboardStore";
 
 // Widget type imports
@@ -65,23 +65,28 @@ const WIDGET_COMPONENTS = {
 };
 
 export default function WidgetContainer({ widget }) {
-  const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId } =
+  const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId, toggleWidgetPin } =
     useDashboardStore();
   const [editingTitle, setEditingTitle] = useState(false);
 
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const isSelected = selectedWidgetId === widget.i;
+  const isPinned = widget.pinned;
 
   return (
     <div
       className={`bg-white rounded-lg shadow border h-full flex flex-col overflow-hidden transition-shadow ${
-        isSelected ? "border-indigo-400 shadow-md ring-2 ring-indigo-200" : "border-gray-200"
+        isSelected ? "border-indigo-400 shadow-md ring-2 ring-indigo-200" : isPinned ? "border-amber-300" : "border-gray-200"
       }`}
     >
       {/* Header / Drag Handle */}
-      <div className="drag-handle flex items-center justify-between px-2 py-1.5 bg-gray-50 border-b border-gray-100 cursor-move select-none min-h-[32px]">
+      <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 ${isPinned ? 'bg-amber-50' : 'bg-gray-50'} border-b border-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}>
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          <GripVertical size={14} className="text-gray-400 flex-shrink-0" />
+          {isPinned ? (
+            <Pin size={14} className="text-amber-500 flex-shrink-0" />
+          ) : (
+            <GripVertical size={14} className="text-gray-400 flex-shrink-0" />
+          )}
           {editingTitle ? (
             <input
               autoFocus
@@ -107,6 +112,17 @@ export default function WidgetContainer({ widget }) {
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            className={`p-1 rounded transition-colors ${isPinned ? 'hover:bg-amber-100 text-amber-500' : 'hover:bg-gray-200 text-gray-400'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWidgetPin(widget.i);
+            }}
+            title={isPinned ? "Unpin widget" : "Pin widget (lock position)"}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+          </button>
           <button
             className="p-1 rounded hover:bg-gray-200 transition-colors"
             onClick={(e) => {

@@ -10,13 +10,32 @@ import {
   loadDataSources,
   generateId,
 } from "../utils/storage";
+import { saveDataSourcesIDB, loadDataSourcesIDB, deleteDataSourceIDB } from "../utils/indexedDB";
 import { getDefaultWidgetConfig, getDefaultWidgetSize } from "../utils/chartHelpers";
 
-const useDashboardStore = create((set, get) => ({
+// Load data sources from IndexedDB on startup
+let _idbInitialized = false;
+async function initDataSourcesFromIDB(set) {
+  if (_idbInitialized) return;
+  _idbInitialized = true;
+  try {
+    const idbSources = await loadDataSourcesIDB();
+    if (idbSources && idbSources.length > 0) {
+      set({ dataSources: idbSources });
+    }
+  } catch (e) {
+    console.warn("Failed to load from IndexedDB, falling back to localStorage", e);
+  }
+}
+
+const useDashboardStore = create((set, get) => {
+  // Trigger async IDB load after store creation
+  setTimeout(() => initDataSourcesFromIDB(set), 0);
+
+  return {
   // ─── Data Sources ───
   dataSources: (() => {
     const custom = loadDataSources();
-    // Load only user-added data sources (no built-in sample data)
     return custom.length > 0 ? custom : [];
   })(),
 
@@ -29,7 +48,6 @@ const useDashboardStore = create((set, get) => ({
     name: "Untitled Dashboard",
     widgets: [],
     globalFilters: {
-      dateRange: { start: "", end: "" },
       search: "",
       dynamic: [],
     },
@@ -86,7 +104,6 @@ const useDashboardStore = create((set, get) => ({
       currentDashboard: {
         ...s.currentDashboard,
         globalFilters: {
-          dateRange: { start: "", end: "" },
           search: "",
           dynamic: (s.currentDashboard.globalFilters?.dynamic || []).map((df) => ({
             ...df,
@@ -173,6 +190,17 @@ const useDashboardStore = create((set, get) => ({
       },
     })),
 
+  /** Toggle pin/unpin a widget (prevent moving/resizing) */
+  toggleWidgetPin: (id) =>
+    set((s) => ({
+      currentDashboard: {
+        ...s.currentDashboard,
+        widgets: s.currentDashboard.widgets.map((w) =>
+          w.i === id ? { ...w, pinned: !w.pinned } : w
+        ),
+      },
+    })),
+
   /** Update layout positions (called by react-grid-layout) */
   updateLayout: (layout) =>
     set((s) => ({
@@ -250,7 +278,6 @@ const useDashboardStore = create((set, get) => ({
         name: "Untitled Dashboard",
         widgets: [],
         globalFilters: {
-          dateRange: { start: "", end: "" },
           search: "",
           dynamic: [],
         },
@@ -283,9 +310,10 @@ const useDashboardStore = create((set, get) => ({
     };
     set((s) => {
       const updated = [...s.dataSources, ds];
-      // Save only custom data sources
       const custom = updated.filter((d) => d.type !== "builtin");
       saveDataSources(custom);
+      // Also persist to IndexedDB for larger datasets
+      saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
     });
   },
@@ -300,6 +328,7 @@ const useDashboardStore = create((set, get) => ({
       );
       const custom = updated.filter((d) => d.type !== "builtin");
       saveDataSources(custom);
+      saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
     }),
 
@@ -309,6 +338,8 @@ const useDashboardStore = create((set, get) => ({
       const updated = s.dataSources.filter((ds) => ds.id !== id);
       const custom = updated.filter((d) => d.type !== "builtin");
       saveDataSources(custom);
+      deleteDataSourceIDB(id).catch(console.error);
+      saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
     }),
 
@@ -316,7 +347,7 @@ const useDashboardStore = create((set, get) => ({
   getDataSource: (id) => {
     return get().dataSources.find((ds) => ds.id === id);
   },
-}));
+}});
 
 /** Get a default human-readable title for a widget type */
 function getWidgetDefaultTitle(type) {

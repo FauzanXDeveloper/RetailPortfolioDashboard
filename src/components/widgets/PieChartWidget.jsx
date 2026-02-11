@@ -16,18 +16,38 @@ import { getColor } from "../../utils/chartHelpers";
 
 const RADIAN = Math.PI / 180;
 
-/** Custom label renderer showing name + percentage */
-function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, showPercentages, showLabels }) {
+/** Custom label renderer showing name + percentage + value */
+function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value, showPercentages, showLabels, showValues, labelFontSize }) {
   const radius = outerRadius + 18;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   const parts = [];
   if (showLabels) parts.push(name);
+  if (showValues) parts.push(Number(value).toLocaleString());
   if (showPercentages) parts.push(`${(percent * 100).toFixed(1)}%`);
 
   return (
-    <text x={x} y={y} fill="#374151" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={11}>
+    <text x={x} y={y} fill="#374151" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={labelFontSize || 11}>
+      {parts.join(" · ")}
+    </text>
+  );
+}
+
+/** Inside label renderer */
+function renderInsideLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, showPercentages, showValues, labelFontSize }) {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  const parts = [];
+  if (showValues) parts.push(Number(value).toLocaleString());
+  if (showPercentages) parts.push(`${(percent * 100).toFixed(0)}%`);
+
+  if (percent < 0.05) return null; // Don't show label for tiny slices
+
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={labelFontSize || 11} fontWeight="bold">
       {parts.join(" ")}
     </text>
   );
@@ -81,6 +101,7 @@ export default function PieChartWidget({ widget }) {
 
   const isDonut = style.chartType === "donut";
   const innerRadius = isDonut ? (style.donutThickness || 60) : 0;
+  const labelFontSize = { small: 9, medium: 11, large: 13, xlarge: 16 }[style.labelFontSize || "medium"] || 11;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -91,28 +112,38 @@ export default function PieChartWidget({ widget }) {
           cy="50%"
           innerRadius={isDonut ? `${innerRadius}%` : 0}
           outerRadius="75%"
-          paddingAngle={2}
+          paddingAngle={style.paddingAngle ?? 2}
           dataKey="value"
           nameKey="name"
           animationDuration={600}
+          startAngle={style.startAngle ?? 0}
+          endAngle={style.endAngle ?? 360}
           label={
-            style.labelPosition !== "inside" && (style.showLabels || style.showPercentages)
-              ? (props) =>
-                  renderCustomLabel({
-                    ...props,
-                    showLabels: style.showLabels,
-                    showPercentages: style.showPercentages,
-                  })
-              : undefined
+            style.labelPosition === "inside"
+              ? (style.showValues || style.showPercentages)
+                ? (props) => renderInsideLabel({ ...props, showValues: style.showValues, showPercentages: style.showPercentages, labelFontSize })
+                : undefined
+              : (style.showLabels || style.showPercentages || style.showValues)
+                ? (props) => renderCustomLabel({ ...props, showLabels: style.showLabels, showPercentages: style.showPercentages, showValues: style.showValues, labelFontSize })
+                : undefined
           }
-          labelLine={style.labelPosition !== "inside"}
+          labelLine={style.labelPosition !== "inside" && (style.showLabels || style.showPercentages || style.showValues)}
         >
           {chartData.map((_, idx) => (
             <Cell key={idx} fill={getColor(idx, style.colorScheme)} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => Number(value).toLocaleString()} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-        {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} />}
+        <Tooltip
+          formatter={(value) => Number(value).toLocaleString()}
+          contentStyle={{ fontSize: labelFontSize, borderRadius: 8 }}
+        />
+        {style.showLegend !== false && (
+          <Legend
+            wrapperStyle={{ fontSize: labelFontSize - 1 }}
+            verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
+            layout={style.legendLayout || "horizontal"}
+          />
+        )}
       </PieChart>
     </ResponsiveContainer>
   );

@@ -10,7 +10,6 @@ import {
   Upload,
   Database,
   Search,
-  Calendar,
   X,
   ChevronDown,
   FileJson,
@@ -42,6 +41,8 @@ export default function Header() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [showFilterManager, setShowFilterManager] = useState(false);
   const titleRef = useRef(null);
+  // eslint-disable-next-line no-unused-vars
+  const _ = titleRef; // keep ref for future use
 
   const handleExportJSON = () => {
     exportAsJSON(currentDashboard);
@@ -92,6 +93,7 @@ export default function Header() {
   };
 
   const gf = currentDashboard.globalFilters || {};
+  const dynamicFilters = gf.dynamic || [];
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-2 flex flex-col gap-2 z-20 relative">
@@ -99,7 +101,12 @@ export default function Header() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         {/* Dashboard Title */}
         <div className="flex items-center gap-2">
-          <img src="/alrajhi_logo.png" alt="Logo" className="h-7 w-auto" />
+          <img
+            src={`${process.env.PUBLIC_URL}/alrajhi_logo.png`}
+            alt="Logo"
+            className="h-7 w-auto"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
           {editingTitle ? (
             <input
               ref={titleRef}
@@ -248,36 +255,8 @@ export default function Header() {
       {/* Bottom Row: Global Filters */}
       <div className="flex items-center gap-3 flex-wrap text-sm">
         <span className="text-gray-500 font-medium flex items-center gap-1">
-          <Search size={14} /> Filters:
+          <Filter size={14} /> Filters:
         </span>
-
-        {/* Date Range */}
-        <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
-          <Calendar size={13} className="text-gray-400" />
-          <input
-            type="date"
-            className="bg-transparent text-xs outline-none w-28"
-            value={gf.dateRange?.start || ""}
-            onChange={(e) =>
-              setGlobalFilter("dateRange", {
-                ...gf.dateRange,
-                start: e.target.value,
-              })
-            }
-          />
-          <span className="text-gray-400 text-xs">—</span>
-          <input
-            type="date"
-            className="bg-transparent text-xs outline-none w-28"
-            value={gf.dateRange?.end || ""}
-            onChange={(e) =>
-              setGlobalFilter("dateRange", {
-                ...gf.dateRange,
-                end: e.target.value,
-              })
-            }
-          />
-        </div>
 
         {/* Search */}
         <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
@@ -290,39 +269,152 @@ export default function Header() {
           />
         </div>
 
-        {/* Dynamic global filters */}
-        {(gf.dynamic || []).filter((df) => df.values?.length > 0).map((df) => (
-          <div key={df.id || df.field} className="flex items-center gap-1 bg-purple-50 rounded-lg px-2 py-1">
-            <Filter size={13} className="text-purple-400" />
-            <span className="text-xs text-purple-700 font-medium">{df.label || df.field}:</span>
-            <span className="text-xs text-purple-600">
-              {df.values.length <= 2 ? df.values.join(", ") : `${df.values.length} selected`}
-            </span>
-            <button
-              onClick={() => {
-                const updated = (gf.dynamic || []).map((d) =>
-                  d.id === df.id ? { ...d, values: [] } : d
-                );
-                setGlobalFilter("dynamic", updated);
-              }}
-              className="text-purple-400 hover:text-purple-600"
-            >
-              <X size={10} />
-            </button>
-          </div>
-        ))}
+        {/* Dynamic global filters — ALL filters appear here */}
+        {dynamicFilters.map((df) => {
+          const hasValues = df.values?.length > 0;
+          return (
+            <DynamicFilterDropdown
+              key={df.id || df.field}
+              filter={df}
+              hasValues={hasValues}
+              gf={gf}
+              setGlobalFilter={setGlobalFilter}
+            />
+          );
+        })}
 
         {/* Clear All */}
-        <button
-          onClick={clearGlobalFilters}
-          className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
-        >
-          <X size={12} /> Clear All
-        </button>
+        {(gf.search || dynamicFilters.some((df) => df.values?.length > 0)) && (
+          <button
+            onClick={clearGlobalFilters}
+            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
+          >
+            <X size={12} /> Clear All
+          </button>
+        )}
+
+        {dynamicFilters.length === 0 && !gf.search && (
+          <span className="text-xs text-gray-400 italic">
+            No filters — click "Manage Filters" to add
+          </span>
+        )}
       </div>
 
       {/* Global Filter Manager Modal */}
       <GlobalFilterManager open={showFilterManager} onClose={() => setShowFilterManager(false)} />
     </header>
+  );
+}
+
+/**
+ * Inline dropdown for each dynamic global filter in the header bar.
+ */
+function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
+  const [open, setOpen] = useState(false);
+  const { dataSources } = useDashboardStore();
+  const df = filter;
+
+  const uniqueValues = React.useMemo(() => {
+    const values = new Set();
+    dataSources.forEach((ds) => {
+      if (ds.data) {
+        ds.data.forEach((row) => {
+          if (row[df.field] != null && row[df.field] !== "") {
+            values.add(String(row[df.field]));
+          }
+        });
+      }
+    });
+    return [...values].sort();
+  }, [dataSources, df.field]);
+
+  const toggleValue = (val) => {
+    const current = df.values || [];
+    const next = current.includes(val)
+      ? current.filter((v) => v !== val)
+      : [...current, val];
+    const updated = (gf.dynamic || []).map((d) =>
+      d.id === df.id ? { ...d, values: next } : d
+    );
+    setGlobalFilter("dynamic", updated);
+  };
+
+  const clearFilter = (e) => {
+    e.stopPropagation();
+    const updated = (gf.dynamic || []).map((d) =>
+      d.id === df.id ? { ...d, values: [] } : d
+    );
+    setGlobalFilter("dynamic", updated);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors ${
+          hasValues
+            ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+        }`}
+      >
+        <Filter size={12} />
+        <span className="font-medium">{df.label || df.field}</span>
+        {hasValues && (
+          <>
+            <span className="bg-purple-200 text-purple-800 px-1 py-0.5 rounded-full text-[10px] font-bold">
+              {df.values.length}
+            </span>
+            <button onClick={clearFilter} className="hover:text-red-500 ml-0.5">
+              <X size={10} />
+            </button>
+          </>
+        )}
+        <ChevronDown size={10} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+            <div className="sticky top-0 bg-white px-2 py-1.5 border-b border-gray-100">
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5">
+                <input
+                  type="checkbox"
+                  checked={df.values?.length === uniqueValues.length && uniqueValues.length > 0}
+                  onChange={(e) => {
+                    const newValues = e.target.checked ? [...uniqueValues] : [];
+                    const updated = (gf.dynamic || []).map((d) =>
+                      d.id === df.id ? { ...d, values: newValues } : d
+                    );
+                    setGlobalFilter("dynamic", updated);
+                  }}
+                  className="rounded"
+                />
+                <span className="font-medium text-gray-500">Select All</span>
+              </label>
+            </div>
+            <div className="p-1">
+              {uniqueValues.map((v) => (
+                <label
+                  key={v}
+                  className="flex items-center gap-1.5 text-xs px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={(df.values || []).includes(v)}
+                    onChange={() => toggleValue(v)}
+                    className="rounded"
+                  />
+                  <span className="truncate">{v}</span>
+                </label>
+              ))}
+              {uniqueValues.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-3">No data imported yet</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -54,6 +54,9 @@ export default function Canvas() {
     h: w.h || 3,
     minW: 2,
     minH: 1,
+    static: !!w.pinned,
+    isDraggable: !w.pinned,
+    isResizable: !w.pinned,
   }));
 
   const handleLayoutChange = useCallback(
