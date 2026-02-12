@@ -68,19 +68,59 @@ export default function WidgetContainer({ widget }) {
   const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId, toggleWidgetPin } =
     useDashboardStore();
   const [editingTitle, setEditingTitle] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
 
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const isSelected = selectedWidgetId === widget.i;
   const isPinned = widget.pinned;
+  const style = widget.config?.style || {};
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
+  const closeContextMenu = () => setContextMenu(null);
 
   return (
     <div
       className={`bg-white rounded-lg shadow border h-full flex flex-col overflow-hidden transition-shadow ${
-        isSelected ? "border-indigo-400 shadow-md ring-2 ring-indigo-200" : isPinned ? "border-amber-300" : "border-gray-200"
+        isSelected ? "border-indigo-400 shadow-md ring-2 ring-indigo-200" : "border-gray-200"
       }`}
+      style={{
+        borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#4F46E5"}` : undefined,
+      }}
+      onContextMenu={handleContextMenu}
     >
+      {/* Right-click context menu */}
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-[9999]" onClick={closeContextMenu} onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }} />
+          <div
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-[10000] py-1 min-w-[160px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+              onClick={() => { setHeaderHidden(!headerHidden); closeContextMenu(); }}
+            >
+              {headerHidden ? "📌 Show Header" : "👁️ Hide Header"}
+            </button>
+            <button
+              className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+              onClick={() => { toggleWidgetPin(widget.i); closeContextMenu(); }}
+            >
+              {isPinned ? "🔓 Unpin Widget" : "📍 Pin Widget"}
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Header / Drag Handle */}
-      <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 ${isPinned ? 'bg-amber-50' : 'bg-gray-50'} border-b border-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}>
+      {!headerHidden && (
+      <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 bg-gray-50 border-b border-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}>
         <div className="flex items-center gap-1 flex-1 min-w-0">
           {isPinned ? (
             <Pin size={14} className="text-amber-500 flex-shrink-0" />
@@ -113,7 +153,7 @@ export default function WidgetContainer({ widget }) {
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
-            className={`p-1 rounded transition-colors ${isPinned ? 'hover:bg-amber-100 text-amber-500' : 'hover:bg-gray-200 text-gray-400'}`}
+            className={`p-1 rounded transition-colors ${isPinned ? 'hover:bg-gray-200 text-indigo-500' : 'hover:bg-gray-200 text-gray-400'}`}
             onClick={(e) => {
               e.stopPropagation();
               toggleWidgetPin(widget.i);
@@ -147,6 +187,12 @@ export default function WidgetContainer({ widget }) {
           </button>
         </div>
       </div>
+      )}
+
+      {/* Minimal drag handle when header is hidden */}
+      {headerHidden && (
+        <div className={`${isPinned ? '' : 'drag-handle'} h-1.5 bg-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'}`} />
+      )}
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto p-2">

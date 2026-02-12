@@ -57,6 +57,27 @@ export default function AreaChartConfig({ widget }) {
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Additional Areas</label>
+                {(config.additionalLines || []).map((line, idx) => (
+                  <div key={idx} className="flex gap-1 mb-1">
+                    <select className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 outline-none" value={line}
+                      onChange={(e) => {
+                        const lines = [...(config.additionalLines || [])];
+                        lines[idx] = e.target.value;
+                        update("additionalLines", lines);
+                      }}>
+                      {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                    <button className="text-red-400 hover:text-red-600 text-xs px-1" onClick={() => {
+                      update("additionalLines", (config.additionalLines || []).filter((_, i) => i !== idx));
+                    }}>×</button>
+                  </div>
+                ))}
+                <button className="text-xs text-indigo-600 hover:text-indigo-800" onClick={() => {
+                  update("additionalLines", [...(config.additionalLines || []), numericFields[0] || ""]);
+                }}>+ Add Area</button>
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Aggregation</label>
                 <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.aggregation || "sum"} onChange={(e) => update("aggregation", e.target.value)}>
                   {["sum", "average", "count", "min", "max"].map((a) => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
@@ -154,6 +175,16 @@ export default function AreaChartConfig({ widget }) {
               </div>
             </>
           )}
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="block text-xs font-medium text-gray-600">Accent Border</label>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={style.accentBorder || false} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
+              Show Left Border
+            </label>
+            {style.accentBorder && (
+              <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
+            )}
+          </div>
         </div>
       )}
 

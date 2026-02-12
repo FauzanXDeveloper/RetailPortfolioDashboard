@@ -1,6 +1,6 @@
 /**
  * Zustand store for dashboard state management.
- * Manages widgets, data sources, UI state, filters, and persistence.
+ * Manages widgets, data sources, UI state, filters, environments, and persistence.
  */
 import { create } from "zustand";
 import {
@@ -11,6 +11,16 @@ import {
   generateId,
 } from "../utils/storage";
 import { saveDataSourcesIDB, loadDataSourcesIDB, deleteDataSourceIDB } from "../utils/indexedDB";
+import {
+  saveEnvironment,
+  loadEnvironment,
+  deleteEnvironment as deleteEnvFromDB,
+  getSessionEnvId,
+  setSessionEnvId,
+  clearSession,
+  checkInactivity,
+  updateLastActive,
+} from "../utils/environmentDB";
 import { getDefaultWidgetConfig, getDefaultWidgetSize } from "../utils/chartHelpers";
 
 // Load data sources from IndexedDB on startup
@@ -28,11 +38,38 @@ async function initDataSourcesFromIDB(set) {
   }
 }
 
+// Check inactivity on startup — if > 1 day, clear session
+const _sessionExpired = checkInactivity();
+const _initialEnvId = _sessionExpired ? null : getSessionEnvId();
+
 const useDashboardStore = create((set, get) => {
   // Trigger async IDB load after store creation
-  setTimeout(() => initDataSourcesFromIDB(set), 0);
+  // Trigger async: load environment data if env is set, else IDB fallback
+  setTimeout(async () => {
+    if (_initialEnvId) {
+      try {
+        const env = await loadEnvironment(_initialEnvId);
+        if (env) {
+          set({
+            environmentId: _initialEnvId,
+            dataSources: env.dataSources || [],
+            dashboards: env.dashboards || [],
+          });
+          updateLastActive();
+          return;
+        }
+      } catch (e) {
+        console.warn("Failed to load environment:", e);
+      }
+    }
+    // No environment — load from IDB as fallback
+    initDataSourcesFromIDB(set);
+  }, 0);
 
   return {
+  // ─── Environment ───
+  environmentId: _initialEnvId,
+
   // ─── Data Sources ───
   dataSources: (() => {
     const custom = loadDataSources();
@@ -40,7 +77,7 @@ const useDashboardStore = create((set, get) => {
   })(),
 
   // ─── Saved Dashboards ───
-  dashboards: loadDashboards(),
+  dashboards: _initialEnvId ? [] : loadDashboards(),
 
   // ─── Current Dashboard ───
   currentDashboard: {
@@ -61,6 +98,116 @@ const useDashboardStore = create((set, get) => {
 
   // ─── Widget filter values (for filter widgets pushing values) ───
   widgetFilterValues: {},
+
+  // ────────────────────────────────────────────
+  // Environment Actions
+  // ────────────────────────────────────────────
+
+  /** Create or enter an environment by ID */
+  enterEnvironment: async (envId) => {
+    const trimmed = envId.trim();
+    if (!trimmed) return false;
+    try {
+      let env = await loadEnvironment(trimmed);
+      if (!env) {
+        // Create new environment
+        env = {
+          id: trimmed,
+          dashboards: [],
+          dataSources: [],
+          createdAt: new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+        };
+        await saveEnvironment(env);
+      }
+      setSessionEnvId(trimmed);
+      updateLastActive();
+      set({
+        environmentId: trimmed,
+        dataSources: env.dataSources || [],
+        dashboards: env.dashboards || [],
+        currentDashboard: {
+          id: null,
+          name: "Untitled Dashboard",
+          widgets: [],
+          globalFilters: { search: "", dynamic: [] },
+        },
+        configPanelOpen: false,
+        selectedWidgetId: null,
+      });
+      return true;
+    } catch (e) {
+      console.error("Failed to enter environment:", e);
+      return false;
+    }
+  },
+
+  /** Leave current environment */
+  leaveEnvironment: () => {
+    clearSession();
+    set({
+      environmentId: null,
+      dataSources: [],
+      dashboards: [],
+      currentDashboard: {
+        id: null,
+        name: "Untitled Dashboard",
+        widgets: [],
+        globalFilters: { search: "", dynamic: [] },
+      },
+      configPanelOpen: false,
+      selectedWidgetId: null,
+    });
+  },
+
+  /** Delete current environment and leave */
+  deleteCurrentEnvironment: async () => {
+    const envId = get().environmentId;
+    if (!envId) return false;
+    try {
+      await deleteEnvFromDB(envId);
+      clearSession();
+      set({
+        environmentId: null,
+        dataSources: [],
+        dashboards: [],
+        currentDashboard: {
+          id: null,
+          name: "Untitled Dashboard",
+          widgets: [],
+          globalFilters: { search: "", dynamic: [] },
+        },
+        configPanelOpen: false,
+        selectedWidgetId: null,
+      });
+      return true;
+    } catch (e) {
+      console.error("Failed to delete environment:", e);
+      return false;
+    }
+  },
+
+  /** Persist current state to environment (called after save/data changes) */
+  _persistToEnvironment: async () => {
+    const state = get();
+    if (!state.environmentId) return;
+    try {
+      const env = {
+        id: state.environmentId,
+        dashboards: state.dashboards,
+        dataSources: state.dataSources.filter((d) => d.type !== "builtin"),
+        lastModified: new Date().toISOString(),
+      };
+      // Preserve createdAt from existing
+      const existing = await loadEnvironment(state.environmentId);
+      if (existing) env.createdAt = existing.createdAt;
+      else env.createdAt = new Date().toISOString();
+      await saveEnvironment(env);
+      updateLastActive();
+    } catch (e) {
+      console.error("Failed to persist to environment:", e);
+    }
+  },
 
   // ────────────────────────────────────────────
   // Actions
@@ -222,7 +369,7 @@ const useDashboardStore = create((set, get) => {
 
   // ─── Dashboard Persistence ───
 
-  /** Save current dashboard to localStorage */
+  /** Save current dashboard to localStorage and environment */
   saveDashboard: () => {
     const state = get();
     const dashboard = {
@@ -247,6 +394,8 @@ const useDashboardStore = create((set, get) => {
       dashboards: updated,
       currentDashboard: dashboard,
     });
+    // Persist to environment
+    setTimeout(() => get()._persistToEnvironment(), 0);
   },
 
   /** Load a dashboard by id */
@@ -268,6 +417,7 @@ const useDashboardStore = create((set, get) => {
     const updated = state.dashboards.filter((d) => d.id !== id);
     saveDashboards(updated);
     set({ dashboards: updated });
+    setTimeout(() => get()._persistToEnvironment(), 0);
   },
 
   /** Create new empty dashboard */
@@ -312,14 +462,14 @@ const useDashboardStore = create((set, get) => {
       const updated = [...s.dataSources, ds];
       const custom = updated.filter((d) => d.type !== "builtin");
       saveDataSources(custom);
-      // Also persist to IndexedDB for larger datasets
       saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
     });
+    setTimeout(() => get()._persistToEnvironment(), 0);
   },
 
   /** Update a data source */
-  updateDataSource: (id, updates) =>
+  updateDataSource: (id, updates) => {
     set((s) => {
       const updated = s.dataSources.map((ds) =>
         ds.id === id
@@ -330,10 +480,12 @@ const useDashboardStore = create((set, get) => {
       saveDataSources(custom);
       saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
-    }),
+    });
+    setTimeout(() => get()._persistToEnvironment(), 0);
+  },
 
   /** Delete a data source */
-  deleteDataSource: (id) =>
+  deleteDataSource: (id) => {
     set((s) => {
       const updated = s.dataSources.filter((ds) => ds.id !== id);
       const custom = updated.filter((d) => d.type !== "builtin");
@@ -341,7 +493,9 @@ const useDashboardStore = create((set, get) => {
       deleteDataSourceIDB(id).catch(console.error);
       saveDataSourcesIDB(custom).catch(console.error);
       return { dataSources: updated };
-    }),
+    });
+    setTimeout(() => get()._persistToEnvironment(), 0);
+  },
 
   /** Get data source by id */
   getDataSource: (id) => {

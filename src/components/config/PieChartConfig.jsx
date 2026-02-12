@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
+import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
 
 export default function PieChartConfig({ widget }) {
@@ -150,6 +151,16 @@ export default function PieChartConfig({ widget }) {
             <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.colorScheme || "Default"} onChange={(e) => updateStyle("colorScheme", e.target.value)}>
               {["Default", "Blues", "Greens", "Warm"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+          </div>
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="block text-xs font-medium text-gray-600">Accent Border</label>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={style.accentBorder || false} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
+              Show Left Border
+            </label>
+            {style.accentBorder && (
+              <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
+            )}
           </div>
         </div>
       )}

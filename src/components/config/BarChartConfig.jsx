@@ -360,6 +360,16 @@ export default function BarChartConfig({ widget }) {
               </div>
             </>
           )}
+          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
+            <label className="block text-xs font-medium text-gray-600">Accent Border</label>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={style.accentBorder || false} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
+              Show Left Border
+            </label>
+            {style.accentBorder && (
+              <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
+            )}
+          </div>
         </div>
       )}
 

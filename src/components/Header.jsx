@@ -16,6 +16,9 @@ import {
   Image as ImageIcon,
   FileText,
   Filter,
+  LogIn,
+  LogOut,
+  Trash2,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { importDashboard } from "../utils/storage";
@@ -30,11 +33,21 @@ export default function Header() {
     newDashboard,
     saveDashboard,
     loadDashboard,
+    deleteDashboard,
     importDashboardData,
     setGlobalFilter,
     clearGlobalFilters,
     setDataManagerOpen,
+    environmentId,
+    enterEnvironment,
+    leaveEnvironment,
+    deleteCurrentEnvironment,
   } = useDashboardStore();
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [envInput, setEnvInput] = useState("");
+  const [envLoading, setEnvLoading] = useState(false);
+  const [showDeleteEnvConfirm, setShowDeleteEnvConfirm] = useState(false);
 
   const [showLoadDropdown, setShowLoadDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -43,6 +56,14 @@ export default function Header() {
   const titleRef = useRef(null);
   // eslint-disable-next-line no-unused-vars
   const _ = titleRef; // keep ref for future use
+
+  const handleEnterEnv = async () => {
+    if (!envInput.trim()) return;
+    setEnvLoading(true);
+    await enterEnvironment(envInput.trim());
+    setEnvInput("");
+    setEnvLoading(false);
+  };
 
   const handleExportJSON = () => {
     exportAsJSON(currentDashboard);
@@ -97,6 +118,75 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-2 flex flex-col gap-2 z-20 relative">
+      {/* Environment Bar */}
+      <div className="flex items-center gap-2 text-xs">
+        {environmentId ? (
+          <>
+            <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200">
+              <span className="font-bold">🌐 {environmentId}</span>
+            </div>
+            <button
+              onClick={leaveEnvironment}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+              title="Leave environment"
+            >
+              <LogOut size={12} /> Leave
+            </button>
+            <button
+              onClick={() => setShowDeleteEnvConfirm(true)}
+              className="flex items-center gap-1 px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+              title="Delete environment"
+            >
+              <Trash2 size={12} /> Delete Env
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-gray-500 font-medium">Enter Environment:</span>
+            <input
+              className="text-xs border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-indigo-400 w-36"
+              placeholder="Name or code..."
+              value={envInput}
+              onChange={(e) => setEnvInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleEnterEnv()}
+            />
+            <button
+              onClick={handleEnterEnv}
+              disabled={envLoading || !envInput.trim()}
+              className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              <LogIn size={12} /> {envLoading ? "Loading..." : "Enter"}
+            </button>
+            <span className="text-gray-400 italic ml-1">Create or enter an existing environment</span>
+          </>
+        )}
+      </div>
+
+      {/* Delete Environment Confirmation Modal */}
+      {showDeleteEnvConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-80">
+            <h3 className="text-sm font-bold text-red-700 mb-2">Delete Environment</h3>
+            <p className="text-xs text-gray-600 mb-4">
+              Are you sure you want to delete environment <strong>"{environmentId}"</strong>? This will permanently remove all dashboards and data within it.
+            </p>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700"
+                onClick={async () => {
+                  await deleteCurrentEnvironment();
+                  setShowDeleteEnvConfirm(false);
+                }}
+              >Yes, Delete</button>
+              <button
+                className="flex-1 px-3 py-1.5 text-xs bg-gray-200 rounded-lg hover:bg-gray-300"
+                onClick={() => setShowDeleteEnvConfirm(false)}
+              >Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Row: Title + Actions */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         {/* Dashboard Title */}
@@ -152,26 +242,62 @@ export default function Header() {
               <FolderOpen size={14} /> Load <ChevronDown size={12} />
             </button>
             {showLoadDropdown && (
-              <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                 {dashboards.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-500">
                     No saved dashboards
                   </div>
                 ) : (
                   dashboards.map((d) => (
-                    <button
-                      key={d.id}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                      onClick={() => {
-                        loadDashboard(d.id);
-                        setShowLoadDropdown(false);
-                      }}
-                    >
-                      <div className="font-medium">{d.name}</div>
-                      <div className="text-xs text-gray-400">
-                        {d.widgets?.length || 0} widgets
-                      </div>
-                    </button>
+                    <div key={d.id} className="border-b border-gray-100 last:border-0">
+                      {confirmDeleteId === d.id ? (
+                        <div className="px-3 py-2 bg-red-50">
+                          <p className="text-xs text-red-700 font-medium mb-2">Delete "{d.name}"?</p>
+                          <div className="flex gap-2">
+                            <button
+                              className="flex-1 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteDashboard(d.id);
+                                setConfirmDeleteId(null);
+                              }}
+                            >Yes, Delete</button>
+                            <button
+                              className="flex-1 px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteId(null);
+                              }}
+                            >Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center hover:bg-gray-50">
+                          <button
+                            className="flex-1 text-left px-3 py-2 text-sm"
+                            onClick={() => {
+                              loadDashboard(d.id);
+                              setShowLoadDropdown(false);
+                            }}
+                          >
+                            <div className="font-medium">{d.name}</div>
+                            <div className="text-xs text-gray-400">
+                              {d.widgets?.length || 0} widgets
+                            </div>
+                          </button>
+                          <button
+                            className="p-1.5 mr-2 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(d.id);
+                            }}
+                            title="Delete dashboard"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
