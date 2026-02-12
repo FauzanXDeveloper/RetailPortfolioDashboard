@@ -415,7 +415,7 @@ export default function BarChartConfig({ widget }) {
           </div>
 
           {/* Widget Appearance */}
-          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}
 

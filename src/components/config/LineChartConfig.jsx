@@ -255,7 +255,7 @@ export default function LineChartConfig({ widget }) {
           </div>
 
           {/* Widget Appearance */}
-          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}
 

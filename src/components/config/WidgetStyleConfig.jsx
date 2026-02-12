@@ -54,15 +54,20 @@ const PRESETS = [
   },
 ];
 
-export default function WidgetStyleConfig({ style = {}, updateStyle }) {
+export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyleBatch }) {
   const [section, setSection] = useState("appearance");
 
-  // Apply all preset values at once
+  // Apply all preset values at once using batch update to avoid stale state
   const applyPreset = useCallback((preset) => {
-    Object.entries(preset.values).forEach(([key, value]) => {
-      updateStyle(key, value);
-    });
-  }, [updateStyle]);
+    if (updateStyleBatch) {
+      updateStyleBatch(preset.values);
+    } else {
+      // Fallback: call updateStyle for each (may have stale state issues)
+      Object.entries(preset.values).forEach(([key, value]) => {
+        updateStyle(key, value);
+      });
+    }
+  }, [updateStyle, updateStyleBatch]);
 
   const sections = [
     { key: "appearance", label: "🎨 Look" },

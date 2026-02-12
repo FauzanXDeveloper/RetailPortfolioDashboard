@@ -187,7 +187,7 @@ export default function PieChartConfig({ widget }) {
           </div>
 
           {/* Widget Appearance */}
-          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}
 

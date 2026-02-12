@@ -25,6 +25,7 @@ export default function KPICardConfig({ widget }) {
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) => updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) => updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
   const updateFormat = (key, value) => updateWidgetConfig(widget.i, { format: { ...format, [key]: value } });
   const updateComparison = (key, value) => updateWidgetConfig(widget.i, { comparison: { ...comparison, [key]: value } });
 
@@ -230,7 +231,7 @@ export default function KPICardConfig({ widget }) {
           </div>
 
           {/* Widget Appearance */}
-          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}
 

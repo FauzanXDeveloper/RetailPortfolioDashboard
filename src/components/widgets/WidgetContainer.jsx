@@ -129,6 +129,14 @@ export default function WidgetContainer({ widget }) {
       className={`h-full flex flex-col overflow-hidden transition-shadow ${
         isSelected ? "ring-2 ring-brand-200" : ""
       }`}
+      onDoubleClick={(e) => {
+        // Don't trigger if user double-clicked on a button, input, or is editing title
+        const tag = e.target.tagName?.toLowerCase();
+        if (tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea') return;
+        e.stopPropagation();
+        selectWidget(widget.i);
+      }}
+      title="Double-click to configure"
       style={{
         backgroundColor: buildBackgroundColor(),
         borderRadius: `${style.widgetBorderRadius ?? 8}px`,
