@@ -76,6 +76,15 @@ export default function WidgetContainer({ widget }) {
   const isPinned = widget.pinned;
   const style = widget.config?.style || {};
 
+  const shadowMap = {
+    none: 'none',
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    default: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  };
+
   const handleContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -86,33 +95,63 @@ export default function WidgetContainer({ widget }) {
 
   return (
     <div
-      className={`bg-white rounded-lg shadow border h-full flex flex-col overflow-hidden transition-shadow ${
-        isSelected ? "border-indigo-400 shadow-md ring-2 ring-indigo-200" : "border-gray-200"
+      className={`h-full flex flex-col overflow-hidden transition-shadow ${
+        isSelected ? "ring-2 ring-brand-200" : ""
       }`}
       style={{
-        borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#4F46E5"}` : undefined,
+        backgroundColor: style.widgetBgColor || '#ffffff',
+        borderRadius: `${style.widgetBorderRadius ?? 8}px`,
+        boxShadow: shadowMap[style.widgetShadow || 'default'],
+        border: isSelected ? '1px solid #a9b5eb' : '1px solid #e5e7eb',
+        borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#1a3ab5"}` : undefined,
       }}
       onContextMenu={handleContextMenu}
     >
-      {/* Right-click context menu */}
+      {/* Right-click context menu — native OS style */}
       {contextMenu && (
         <>
           <div className="fixed inset-0 z-[9999]" onClick={closeContextMenu} onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }} />
           <div
-            className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-[10000] py-1 min-w-[160px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
+            className="fixed z-[10000] min-w-[180px]"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              backgroundColor: 'rgba(255,255,255,0.98)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderRadius: '6px',
+              boxShadow: '0 6px 24px rgba(0,0,0,0.16), 0 0 1px rgba(0,0,0,0.12)',
+              border: '0.5px solid rgba(0,0,0,0.08)',
+              padding: '4px 0',
+            }}
           >
             <button
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-between gap-4"
               onClick={() => { setHeaderHidden(!headerHidden); closeContextMenu(); }}
             >
-              {headerHidden ? "📌 Show Header" : "👁️ Hide Header"}
+              <span>{headerHidden ? "Show Header" : "Hide Header"}</span>
+              <span className="text-[11px] text-gray-400" style={{ fontFamily: 'system-ui' }}>{headerHidden ? "⌘H" : "⌘H"}</span>
             </button>
+            <div style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.08)', margin: '4px 0' }} />
             <button
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 transition-colors"
+              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-between gap-4"
               onClick={() => { toggleWidgetPin(widget.i); closeContextMenu(); }}
             >
-              {isPinned ? "🔓 Unpin Widget" : "📍 Pin Widget"}
+              <span>{isPinned ? "Unpin Widget" : "Pin Widget"}</span>
+              <span className="text-[11px] text-gray-400" style={{ fontFamily: 'system-ui' }}>{isPinned ? "⌘U" : "⌘P"}</span>
+            </button>
+            <div style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.08)', margin: '4px 0' }} />
+            <button
+              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors"
+              onClick={() => { selectWidget(widget.i); closeContextMenu(); }}
+            >
+              Configure
+            </button>
+            <button
+              className="w-full text-left px-3 py-[6px] text-[13px] text-red-600 hover:bg-red-500 hover:text-white transition-colors"
+              onClick={() => { removeWidget(widget.i); closeContextMenu(); }}
+            >
+              Remove Widget
             </button>
           </div>
         </>
@@ -130,7 +169,7 @@ export default function WidgetContainer({ widget }) {
           {editingTitle ? (
             <input
               autoFocus
-              className="text-xs font-medium bg-transparent border-b border-indigo-400 outline-none w-full"
+              className="text-xs font-medium bg-transparent border-b border-brand-400 outline-none w-full"
               value={widget.title}
               onChange={(e) => updateWidgetTitle(widget.i, e.target.value)}
               onBlur={() => setEditingTitle(false)}
@@ -140,7 +179,12 @@ export default function WidgetContainer({ widget }) {
             />
           ) : (
             <span
-              className="text-xs font-medium text-gray-600 truncate cursor-text"
+              className="text-xs text-gray-600 truncate cursor-text"
+              style={{
+                fontSize: style.titleFontSize ? `${style.titleFontSize}px` : undefined,
+                color: style.titleColor || undefined,
+                fontWeight: style.titleBold !== false ? 600 : 400,
+              }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 setEditingTitle(true);
@@ -153,7 +197,7 @@ export default function WidgetContainer({ widget }) {
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
-            className={`p-1 rounded transition-colors ${isPinned ? 'hover:bg-gray-200 text-indigo-500' : 'hover:bg-gray-200 text-gray-400'}`}
+            className={`p-1 rounded transition-colors ${isPinned ? 'hover:bg-gray-200 text-brand-500' : 'hover:bg-gray-200 text-gray-400'}`}
             onClick={(e) => {
               e.stopPropagation();
               toggleWidgetPin(widget.i);
@@ -195,7 +239,7 @@ export default function WidgetContainer({ widget }) {
       )}
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto p-2">
+      <div className="flex-1 overflow-auto" style={{ padding: `${style.widgetPadding ?? 8}px` }}>
         {WidgetComponent ? (
           <WidgetComponent widget={widget} />
         ) : (

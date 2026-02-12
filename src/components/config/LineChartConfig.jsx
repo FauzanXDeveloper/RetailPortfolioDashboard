@@ -6,6 +6,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function LineChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -115,6 +116,31 @@ export default function LineChartConfig({ widget }) {
 
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Chart Subtype */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chart Subtype</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+              value={style.subtype || "smooth"}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateStyle("subtype", v);
+                updateStyle("lineStyle", v === "sparkline" ? "smooth" : v);
+                if (v === "sparkline") {
+                  updateStyle("showDataPoints", false);
+                  updateStyle("showGridLines", false);
+                  updateStyle("showLegend", false);
+                  updateStyle("showAxisTitles", false);
+                }
+              }}
+            >
+              <option value="smooth">Smooth</option>
+              <option value="straight">Straight</option>
+              <option value="step">Stepped</option>
+              <option value="sparkline">Sparkline (minimal)</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Line Style</label>
             <div className="flex gap-2">
@@ -207,6 +233,9 @@ export default function LineChartConfig({ widget }) {
               <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
             )}
           </div>
+
+          {/* Widget Appearance */}
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
         </div>
       )}
 

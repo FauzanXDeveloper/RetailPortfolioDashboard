@@ -13,7 +13,8 @@ import Canvas from "./Canvas";
 import ConfigPanel from "./ConfigPanel";
 import DataManager from "./modals/DataManager";
 import useDashboardStore from "../store/dashboardStore";
-import { LogIn, Plus, X, CheckCircle } from "lucide-react";
+import { LogIn, Plus, X, CheckCircle, Upload } from "lucide-react";
+import { saveEnvironment } from "../utils/environmentDB";
 
 const AUTO_SAVE_KEY = "analytics-dashboard-autosave";
 
@@ -125,25 +126,58 @@ export default function Dashboard() {
     setCreateEnvName("");
   };
 
+  /** Import a shared environment JSON file */
+  const handleImportEnv = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (data._type !== "analytics-env-share" || !data.id) {
+          alert("Invalid environment file. Please select a valid shared environment JSON file.");
+          return;
+        }
+        // Save the environment to IDB
+        const env = {
+          id: data.id,
+          name: data.name || data.id,
+          dashboards: data.dashboards || [],
+          dataSources: data.dataSources || [],
+          createdAt: data.exportedAt || new Date().toISOString(),
+          lastModified: new Date().toISOString(),
+        };
+        await saveEnvironment(env);
+        // Enter the environment
+        await enterEnvironment(data.id);
+      } catch (err) {
+        alert("Failed to import environment: " + err.message);
+      }
+    };
+    input.click();
+  };
+
   // If no environment is active, show landing screen
   if (!environmentId) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900">
         <div className="text-center max-w-md">
           <img
             src={`${process.env.PUBLIC_URL}/alrajhi_logo.png`}
             alt="Logo"
-            className="h-12 w-auto mx-auto mb-4"
+            className="h-14 w-auto mx-auto mb-6 brightness-0 invert"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
-          <div className="text-6xl mb-4">📊</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Analytics Dashboard</h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <h1 className="text-2xl font-bold text-white mb-2">Analytics Dashboard</h1>
+          <p className="text-sm text-white/60 mb-6">
             Enter your environment code to access an existing environment, or create a new one.
           </p>
           <div className="flex items-center gap-2 justify-center">
             <input
-              className="text-sm border border-gray-300 rounded-lg px-4 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 w-48"
+              className="text-sm border border-white/20 bg-white/10 text-white rounded-lg px-4 py-2 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 w-48 placeholder-white/40"
               placeholder="e.g. 123, team-alpha"
               value={landingEnvInput}
               onChange={(e) => setLandingEnvInput(e.target.value)}
@@ -154,15 +188,26 @@ export default function Dashboard() {
             <button
               onClick={handleLandingEnter}
               disabled={landingLoading || !landingEnvInput.trim() || landingStep !== "idle"}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
             >
               <LogIn size={16} /> {landingLoading && landingStep === "idle" ? "Checking..." : "Enter"}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-4">
+          <p className="text-xs text-white/40 mt-4">
             Your data and analyses are stored securely in your browser.<br />
             Share the environment code with coworkers so they can view your work.
           </p>
+          <div className="mt-3">
+            <button
+              onClick={handleImportEnv}
+              className="flex items-center gap-1.5 mx-auto px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Upload size={14} /> Import Shared Environment
+            </button>
+            <p className="text-[11px] text-white/30 mt-1">
+              Have a shared environment file? Import it here to access it on this device.
+            </p>
+          </div>
         </div>
 
         {/* Popup: Environment exists — confirm */}
@@ -189,7 +234,7 @@ export default function Dashboard() {
                 <button
                   onClick={handleConfirmEnter}
                   disabled={landingLoading}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-400 disabled:opacity-50 font-medium"
                 >
                   <LogIn size={14} /> {landingLoading ? "Entering..." : "Yes, Enter"}
                 </button>
@@ -211,7 +256,7 @@ export default function Dashboard() {
                 <h3 className="text-sm font-bold text-gray-800">Environment Not Found</h3>
               </div>
               <p className="text-sm text-gray-600 mb-4">
-                No environment with code <span className="font-mono font-bold text-indigo-600">"{landingEnvInput}"</span> exists.
+                No environment with code <span className="font-mono font-bold text-brand-500">"{landingEnvInput}"</span> exists.
               </p>
               <p className="text-xs text-gray-500 mb-4">
                 Would you like to create a new environment with this code?
@@ -219,7 +264,7 @@ export default function Dashboard() {
               <div className="flex gap-2">
                 <button
                   onClick={handleStartCreate}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-400 font-medium"
                 >
                   <Plus size={14} /> Create New
                 </button>
@@ -237,17 +282,17 @@ export default function Dashboard() {
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
             <div className="bg-white rounded-xl shadow-2xl p-6 w-96 animate-in">
               <div className="flex items-center gap-2 mb-3">
-                <Plus size={20} className="text-indigo-500" />
+                <Plus size={20} className="text-brand-500" />
                 <h3 className="text-sm font-bold text-gray-800">Create New Environment</h3>
               </div>
               <p className="text-xs text-gray-500 mb-1">
-                Code: <span className="font-mono font-bold text-indigo-600">{landingEnvInput}</span>
+                Code: <span className="font-mono font-bold text-brand-500">{landingEnvInput}</span>
               </p>
               <p className="text-xs text-gray-500 mb-3">
                 Give your environment a descriptive name:
               </p>
               <input
-                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 mb-4"
+                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 mb-4"
                 placeholder='e.g. "ABC Sdn Bhd Env"'
                 value={createEnvName}
                 onChange={(e) => setCreateEnvName(e.target.value)}
@@ -258,7 +303,7 @@ export default function Dashboard() {
                 <button
                   onClick={handleCreateEnv}
                   disabled={landingLoading || !createEnvName.trim()}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-400 disabled:opacity-50 font-medium"
                 >
                   <Plus size={14} /> {landingLoading ? "Creating..." : "Create & Enter"}
                 </button>

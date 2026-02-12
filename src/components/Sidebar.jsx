@@ -101,7 +101,7 @@ function DraggableWidgetItem({ type, name, icon: Icon }) {
           : "hover:bg-gray-100 bg-white"
       }`}
     >
-      <Icon size={16} className="text-indigo-500 flex-shrink-0" />
+      <Icon size={16} className="text-brand-500 flex-shrink-0" />
       <span className="text-sm text-gray-700">{name}</span>
     </div>
   );

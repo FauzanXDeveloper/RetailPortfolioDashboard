@@ -43,6 +43,17 @@ export default function BarChartWidget({ widget }) {
     // Aggregate
     const aggregated = aggregateData(data, config.xAxis, config.yAxis, config.aggregation || "sum", config.colorBy);
 
+    // Merge additional measures
+    if (config.additionalMeasures?.length > 0 && !config.colorBy) {
+      config.additionalMeasures.forEach((measure) => {
+        const extra = aggregateData(data, config.xAxis, measure, config.aggregation || "sum");
+        aggregated.forEach((row) => {
+          const match = extra.find((r) => r[config.xAxis] === row[config.xAxis]);
+          if (match) row[measure] = match[measure];
+        });
+      });
+    }
+
     // Sort
     let sorted = aggregated;
     if (config.sortBy === "value") {
@@ -59,6 +70,27 @@ export default function BarChartWidget({ widget }) {
     return sorted;
   }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
+  // Determine bar keys (for grouped/stacked)
+  const isGrouped = config.colorBy && config.colorBy !== config.xAxis;
+  const barKeys = useMemo(() => {
+    if (!chartData) return [config.yAxis];
+    return isGrouped
+      ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== config.xAxis)))]
+      : [config.yAxis, ...(config.additionalMeasures || [])].filter(Boolean);
+  }, [chartData, isGrouped, config.xAxis, config.yAxis, config.additionalMeasures]);
+
+  // 100% stacked: normalize data to percentages
+  const displayData = useMemo(() => {
+    if (!chartData || !style.stackPercent || barKeys.length <= 1) return chartData;
+    return chartData.map((row) => {
+      const total = barKeys.reduce((sum, k) => sum + (Number(row[k]) || 0), 0);
+      if (!total) return row;
+      const nr = { ...row };
+      barKeys.forEach((k) => { nr[k] = ((Number(row[k]) || 0) / total) * 100; });
+      return nr;
+    });
+  }, [chartData, style.stackPercent, barKeys]);
+
   if (!config.dataSource || !config.xAxis || !config.yAxis) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-sm text-center p-4">
@@ -69,19 +101,13 @@ export default function BarChartWidget({ widget }) {
     );
   }
 
-  if (!chartData || chartData.length === 0) {
+  if (!displayData || displayData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-sm">
         No data available.
       </div>
     );
   }
-
-  // Determine bar keys (for grouped/stacked)
-  const isGrouped = config.colorBy && config.colorBy !== config.xAxis;
-  const barKeys = isGrouped
-    ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== config.xAxis)))]
-    : [config.yAxis];
 
   const isHorizontal = style.orientation === "horizontal";
 
@@ -93,7 +119,7 @@ export default function BarChartWidget({ widget }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
-        data={chartData}
+        data={displayData}
         layout={isHorizontal ? "vertical" : "horizontal"}
         margin={{
           top: style.marginTop ?? 5,
@@ -144,8 +170,14 @@ export default function BarChartWidget({ widget }) {
           </>
         )}
         <Tooltip
-          contentStyle={{ fontSize, borderRadius: 8, backgroundColor: style.tooltipBg || "#fff", border: "1px solid #e5e7eb" }}
-          formatter={(value) => Number(value).toLocaleString()}
+          contentStyle={{
+            fontSize,
+            borderRadius: 8,
+            backgroundColor: style.tooltipBgColor || "#fff",
+            color: style.tooltipTextColor || "#374151",
+            border: style.tooltipBorder !== false ? "1px solid #e5e7eb" : "none",
+          }}
+          formatter={(value) => style.stackPercent ? `${Number(value).toFixed(1)}%` : Number(value).toLocaleString()}
         />
         {style.showLegend !== false && barKeys.length > 1 && (
           <Legend
@@ -158,7 +190,7 @@ export default function BarChartWidget({ widget }) {
           <Bar
             key={key}
             dataKey={key}
-            fill={isGrouped ? getColor(idx) : (style.barColor || "#4F46E5")}
+            fill={isGrouped ? getColor(idx) : (style.barColor || "#1a3ab5")}
             radius={style.barRadius != null ? [style.barRadius, style.barRadius, 0, 0] : [4, 4, 0, 0]}
             animationDuration={600}
             barSize={style.barWidth || undefined}
@@ -177,8 +209,8 @@ export default function BarChartWidget({ widget }) {
               />
             )}
             {!isGrouped &&
-              chartData.map((_, i) => (
-                <Cell key={i} fill={style.barColor || "#4F46E5"} />
+              displayData.map((_, i) => (
+                <Cell key={i} fill={style.barColor || "#1a3ab5"} />
               ))}
           </Bar>
         ))}

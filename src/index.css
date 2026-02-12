@@ -38,8 +38,8 @@ code {
 }
 
 .react-grid-item > .react-resizable-handle::after {
-  border-right: 2px solid rgba(99, 102, 241, 0.4);
-  border-bottom: 2px solid rgba(99, 102, 241, 0.4);
+  border-right: 2px solid rgba(26, 58, 181, 0.4);
+  border-bottom: 2px solid rgba(26, 58, 181, 0.4);
   right: 4px;
   bottom: 4px;
   width: 8px;
@@ -47,8 +47,8 @@ code {
 }
 
 .react-grid-placeholder {
-  background: rgba(99, 102, 241, 0.15) !important;
-  border: 2px dashed rgba(99, 102, 241, 0.4) !important;
+  background: rgba(26, 58, 181, 0.12) !important;
+  border: 2px dashed rgba(26, 58, 181, 0.35) !important;
   border-radius: 8px;
 }
 

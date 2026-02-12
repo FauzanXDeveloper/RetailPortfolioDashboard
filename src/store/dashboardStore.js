@@ -52,6 +52,7 @@ const useDashboardStore = create((set, get) => {
         if (env) {
           set({
             environmentId: _initialEnvId,
+            environmentName: env.name || _initialEnvId,
             dataSources: env.dataSources || [],
             dashboards: env.dashboards || [],
           });
@@ -69,6 +70,7 @@ const useDashboardStore = create((set, get) => {
   return {
   // ─── Environment ───
   environmentId: _initialEnvId,
+  environmentName: null, // display name loaded from IDB
 
   // ─── Data Sources ───
   dataSources: (() => {
@@ -127,6 +129,7 @@ const useDashboardStore = create((set, get) => {
       updateLastActive();
       set({
         environmentId: trimmed,
+        environmentName: env.name || trimmed,
         dataSources: env.dataSources || [],
         dashboards: env.dashboards || [],
         currentDashboard: {
@@ -166,6 +169,7 @@ const useDashboardStore = create((set, get) => {
       updateLastActive();
       set({
         environmentId: trimmed,
+        environmentName: displayName || trimmed,
         dataSources: [],
         dashboards: [],
         currentDashboard: {
@@ -189,6 +193,7 @@ const useDashboardStore = create((set, get) => {
     clearSession();
     set({
       environmentId: null,
+      environmentName: null,
       dataSources: [],
       dashboards: [],
       currentDashboard: {
@@ -211,6 +216,7 @@ const useDashboardStore = create((set, get) => {
       clearSession();
       set({
         environmentId: null,
+        environmentName: null,
         dataSources: [],
         dashboards: [],
         currentDashboard: {
@@ -236,6 +242,7 @@ const useDashboardStore = create((set, get) => {
     try {
       const env = {
         id: state.environmentId,
+        name: state.environmentName || state.environmentId,
         dashboards: state.dashboards,
         dataSources: state.dataSources.filter((d) => d.type !== "builtin"),
         lastModified: new Date().toISOString(),

@@ -100,8 +100,10 @@ export default function PieChartWidget({ widget }) {
   }
 
   const isDonut = style.chartType === "donut";
-  const innerRadius = isDonut ? (style.donutThickness || 60) : 0;
+  const isRose = style.roseMode;
+  const innerRadius = isDonut ? (style.donutThickness || 60) : (isRose ? 30 : 0);
   const labelFontSize = { small: 9, medium: 11, large: 13, xlarge: 16 }[style.labelFontSize || "medium"] || 11;
+  const paddingAngle = isRose ? 4 : (style.paddingAngle ?? 2);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -110,9 +112,9 @@ export default function PieChartWidget({ widget }) {
           data={chartData}
           cx="50%"
           cy="50%"
-          innerRadius={isDonut ? `${innerRadius}%` : 0}
+          innerRadius={isDonut ? `${innerRadius}%` : (isRose ? `${innerRadius}%` : 0)}
           outerRadius="75%"
-          paddingAngle={style.paddingAngle ?? 2}
+          paddingAngle={paddingAngle}
           dataKey="value"
           nameKey="name"
           animationDuration={600}
@@ -135,7 +137,13 @@ export default function PieChartWidget({ widget }) {
         </Pie>
         <Tooltip
           formatter={(value) => Number(value).toLocaleString()}
-          contentStyle={{ fontSize: labelFontSize, borderRadius: 8 }}
+          contentStyle={{
+            fontSize: labelFontSize,
+            borderRadius: 8,
+            backgroundColor: style.tooltipBgColor || "#fff",
+            color: style.tooltipTextColor || "#374151",
+            border: style.tooltipBorder !== false ? "1px solid #e5e7eb" : "none",
+          }}
         />
         {style.showLegend !== false && (
           <Legend

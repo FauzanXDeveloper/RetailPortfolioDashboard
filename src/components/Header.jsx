@@ -18,6 +18,7 @@ import {
   Filter,
   LogOut,
   Trash2,
+  Share2,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { importDashboard } from "../utils/storage";
@@ -38,6 +39,7 @@ export default function Header() {
     clearGlobalFilters,
     setDataManagerOpen,
     environmentId,
+    environmentName,
     leaveEnvironment,
     deleteCurrentEnvironment,
   } = useDashboardStore();
@@ -101,29 +103,59 @@ export default function Header() {
     }
   };
 
+  /** Export current environment as a shareable JSON file */
+  const handleShareEnv = () => {
+    const state = useDashboardStore.getState();
+    const envData = {
+      _type: "analytics-env-share",
+      id: state.environmentId,
+      name: state.environmentName || state.environmentId,
+      dashboards: state.dashboards,
+      dataSources: state.dataSources.filter((d) => d.type !== "builtin"),
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(envData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `env_${state.environmentId}_${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const gf = currentDashboard.globalFilters || {};
   const dynamicFilters = gf.dynamic || [];
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-2 flex flex-col gap-2 z-20 relative">
+    <header className="bg-brand-700 shadow-sm border-b border-brand-800 px-4 py-2 flex flex-col gap-2 z-20 relative">
       {/* Environment Bar */}
       <div className="flex items-center gap-2 text-xs">
-        <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200">
-          <span className="font-bold">🌐 {environmentId}</span>
+        <div className="flex items-center gap-1.5 bg-white/10 text-white px-2 py-1 rounded-lg border border-white/20" title={`Code: ${environmentId}`}>
+          <span className="font-bold">🌐 {environmentName || environmentId}</span>
+          <span className="text-[10px] text-white/60 font-mono">({environmentId})</span>
         </div>
         <button
           onClick={leaveEnvironment}
-          className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white/80 transition-colors"
           title="Leave environment"
         >
           <LogOut size={12} /> Leave
         </button>
         <button
           onClick={() => setShowDeleteEnvConfirm(true)}
-          className="flex items-center gap-1 px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-200 transition-colors"
           title="Delete environment"
         >
           <Trash2 size={12} /> Delete Env
+        </button>
+        <button
+          onClick={handleShareEnv}
+          className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white/80 transition-colors"
+          title="Share environment (export as file for other devices)"
+        >
+          <Share2 size={12} /> Share
         </button>
       </div>
 
@@ -133,7 +165,7 @@ export default function Header() {
           <div className="bg-white rounded-xl shadow-2xl p-6 w-80">
             <h3 className="text-sm font-bold text-red-700 mb-2">Delete Environment</h3>
             <p className="text-xs text-gray-600 mb-4">
-              Are you sure you want to delete environment <strong>"{environmentId}"</strong>? This will permanently remove all dashboards and data within it.
+              Are you sure you want to delete environment <strong>"{environmentName || environmentId}"</strong>? This will permanently remove all dashboards and data within it.
             </p>
             <div className="flex gap-2">
               <button
@@ -159,14 +191,14 @@ export default function Header() {
           <img
             src={`${process.env.PUBLIC_URL}/alrajhi_logo.png`}
             alt="Logo"
-            className="h-7 w-auto"
+            className="h-7 w-auto brightness-0 invert"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           {editingTitle ? (
             <input
               ref={titleRef}
               autoFocus
-              className="text-lg font-semibold border-b-2 border-indigo-400 outline-none bg-transparent px-1"
+              className="text-lg font-semibold border-b-2 border-white/50 outline-none bg-transparent px-1 text-white"
               value={currentDashboard.name}
               onChange={(e) => setDashboardName(e.target.value)}
               onBlur={() => setEditingTitle(false)}
@@ -174,7 +206,7 @@ export default function Header() {
             />
           ) : (
             <h1
-              className="text-lg font-semibold cursor-pointer hover:text-indigo-600 transition-colors"
+              className="text-lg font-semibold cursor-pointer hover:text-white/80 transition-colors text-white"
               onClick={() => setEditingTitle(true)}
               title="Click to edit"
             >
@@ -187,13 +219,13 @@ export default function Header() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={newDashboard}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
           >
             <Plus size={14} /> New
           </button>
           <button
             onClick={saveDashboard}
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-brand-500 hover:bg-brand-400 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Save size={14} /> Save
           </button>
@@ -202,7 +234,7 @@ export default function Header() {
           <div className="relative">
             <button
               onClick={() => setShowLoadDropdown(!showLoadDropdown)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
             >
               <FolderOpen size={14} /> Load <ChevronDown size={12} />
             </button>
@@ -273,7 +305,7 @@ export default function Header() {
           <div className="relative">
             <button
               onClick={() => setShowExportDropdown(!showExportDropdown)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
             >
               <Download size={14} /> Export <ChevronDown size={12} />
             </button>
@@ -324,19 +356,19 @@ export default function Header() {
           </div>
           <button
             onClick={handleImport}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
           >
             <Upload size={14} /> Import
           </button>
           <button
             onClick={() => setDataManagerOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Database size={14} /> Manage Data
           </button>
           <button
             onClick={() => setShowFilterManager(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Filter size={14} /> Manage Filters
           </button>
@@ -345,15 +377,15 @@ export default function Header() {
 
       {/* Bottom Row: Global Filters */}
       <div className="flex items-center gap-3 flex-wrap text-sm">
-        <span className="text-gray-500 font-medium flex items-center gap-1">
+        <span className="text-white/70 font-medium flex items-center gap-1">
           <Filter size={14} /> Filters:
         </span>
 
         {/* Search */}
-        <div className="flex items-center gap-1 bg-gray-50 rounded-lg px-2 py-1">
-          <Search size={13} className="text-gray-400" />
+        <div className="flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1">
+          <Search size={13} className="text-white/50" />
           <input
-            className="bg-transparent text-xs outline-none w-32"
+            className="bg-transparent text-xs outline-none w-32 text-white placeholder-white/40"
             placeholder="Search data..."
             value={gf.search || ""}
             onChange={(e) => setGlobalFilter("search", e.target.value)}
@@ -378,14 +410,14 @@ export default function Header() {
         {(gf.search || dynamicFilters.some((df) => df.values?.length > 0)) && (
           <button
             onClick={clearGlobalFilters}
-            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
+            className="flex items-center gap-1 text-xs text-red-300 hover:text-red-100"
           >
             <X size={12} /> Clear All
           </button>
         )}
 
         {dynamicFilters.length === 0 && !gf.search && (
-          <span className="text-xs text-gray-400 italic">
+          <span className="text-xs text-white/40 italic">
             No filters — click "Manage Filters" to add
           </span>
         )}

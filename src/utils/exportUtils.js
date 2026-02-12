@@ -5,6 +5,8 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+const LOGO_PATH = (process.env.PUBLIC_URL || '') + '/alrajhi_logo.png';
+
 /**
  * Export dashboard as JSON file
  */
@@ -22,6 +24,79 @@ export const exportAsJSON = (dashboard) => {
 };
 
 /**
+ * Prepare a clone of the dashboard element that captures the full scrollable content
+ */
+function prepareClone(element) {
+  const clone = element.cloneNode(true);
+  // Get the actual scrollable content dimensions
+  const scrollWidth = Math.max(element.scrollWidth, element.offsetWidth);
+  const scrollHeight = Math.max(element.scrollHeight, element.offsetHeight);
+  clone.style.width = `${scrollWidth}px`;
+  clone.style.height = `${scrollHeight}px`;
+  clone.style.overflow = 'visible';
+  clone.style.position = 'relative';
+  // Remove any max-height constraints
+  clone.style.maxHeight = 'none';
+  clone.style.maxWidth = 'none';
+  return { clone, scrollWidth, scrollHeight };
+}
+
+/**
+ * Build a wrapper div with optional logo header
+ */
+function buildWrapper(clone, scrollWidth, options) {
+  const { includeLogo = true, dashboardTitle = 'Dashboard' } = options;
+  const wrapper = document.createElement('div');
+  wrapper.style.padding = '40px';
+  wrapper.style.backgroundColor = '#ffffff';
+  wrapper.style.width = `${scrollWidth + 80}px`;
+  wrapper.style.position = 'absolute';
+  wrapper.style.left = '-9999px';
+  wrapper.style.top = '0';
+
+  if (includeLogo) {
+    const header = document.createElement('div');
+    header.style.textAlign = 'center';
+    header.style.marginBottom = '30px';
+
+    const logo = document.createElement('img');
+    logo.src = LOGO_PATH;
+    logo.crossOrigin = 'anonymous';
+    logo.style.width = '180px';
+    logo.style.height = 'auto';
+    logo.style.margin = '0 auto 16px';
+    logo.style.display = 'block';
+    header.appendChild(logo);
+
+    const title = document.createElement('h1');
+    title.textContent = dashboardTitle;
+    title.style.fontSize = '22px';
+    title.style.fontWeight = 'bold';
+    title.style.color = '#1a2b6d';
+    title.style.marginBottom = '8px';
+    header.appendChild(title);
+
+    const timestamp = document.createElement('p');
+    timestamp.textContent = `Generated on ${new Date().toLocaleString()}`;
+    timestamp.style.fontSize = '12px';
+    timestamp.style.color = '#6B7280';
+    header.appendChild(timestamp);
+
+    const separator = document.createElement('hr');
+    separator.style.border = 'none';
+    separator.style.borderTop = '2px solid #1a2b6d';
+    separator.style.marginTop = '16px';
+    separator.style.opacity = '0.2';
+    header.appendChild(separator);
+
+    wrapper.appendChild(header);
+  }
+
+  wrapper.appendChild(clone);
+  return wrapper;
+}
+
+/**
  * Export dashboard as Image (PNG or JPG)
  */
 export const exportAsImage = async (elementId, options = {}) => {
@@ -36,72 +111,27 @@ export const exportAsImage = async (elementId, options = {}) => {
     const element = document.getElementById(elementId);
     if (!element) throw new Error('Dashboard element not found');
 
-    // Create a wrapper div to include logo and title
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '40px';
-    wrapper.style.backgroundColor = '#ffffff';
-    wrapper.style.width = `${element.offsetWidth + 80}px`;
-
-    // Add logo header if enabled
-    if (includeLogo) {
-      const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '30px';
-
-      // Logo
-      const logo = document.createElement('img');
-      logo.src = '/alrajhi_logo.png';
-      logo.style.width = '200px';
-      logo.style.height = 'auto';
-      logo.style.margin = '0 auto 20px';
-      logo.style.display = 'block';
-      header.appendChild(logo);
-
-      // Title
-      const title = document.createElement('h1');
-      title.textContent = dashboardTitle;
-      title.style.fontSize = '24px';
-      title.style.fontWeight = 'bold';
-      title.style.color = '#1F2937';
-      title.style.marginBottom = '10px';
-      header.appendChild(title);
-
-      // Timestamp
-      const timestamp = document.createElement('p');
-      timestamp.textContent = `Generated on ${new Date().toLocaleString()}`;
-      timestamp.style.fontSize = '14px';
-      timestamp.style.color = '#6B7280';
-      header.appendChild(timestamp);
-
-      // Separator
-      const separator = document.createElement('hr');
-      separator.style.border = 'none';
-      separator.style.borderTop = '2px solid #E5E7EB';
-      separator.style.marginTop = '20px';
-      header.appendChild(separator);
-
-      wrapper.appendChild(header);
-    }
-
-    // Clone the dashboard content
-    const clone = element.cloneNode(true);
-    wrapper.appendChild(clone);
-
-    // Temporarily append to body
+    const { clone, scrollWidth } = prepareClone(element);
+    const wrapper = buildWrapper(clone, scrollWidth, { includeLogo, dashboardTitle });
     document.body.appendChild(wrapper);
 
-    // Capture the wrapper
+    // Wait a tick for images to load
+    await new Promise((r) => setTimeout(r, 200));
+
     const canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
       backgroundColor: '#ffffff',
+      width: wrapper.scrollWidth,
+      height: wrapper.scrollHeight,
+      windowWidth: wrapper.scrollWidth,
+      windowHeight: wrapper.scrollHeight,
     });
 
-    // Remove wrapper
     document.body.removeChild(wrapper);
 
-    // Convert to blob and download
     canvas.toBlob(
       (blob) => {
         const url = URL.createObjectURL(blob);
@@ -125,11 +155,11 @@ export const exportAsImage = async (elementId, options = {}) => {
 };
 
 /**
- * Export dashboard as PDF
+ * Export dashboard as PDF — landscape by default for better dashboard layout
  */
 export const exportAsPDF = async (elementId, options = {}) => {
   const {
-    orientation = 'portrait',
+    orientation = 'landscape',
     pageSize = 'a4',
     includeLogo = true,
     dashboardTitle = 'Dashboard',
@@ -139,136 +169,79 @@ export const exportAsPDF = async (elementId, options = {}) => {
     const element = document.getElementById(elementId);
     if (!element) throw new Error('Dashboard element not found');
 
-    // Create wrapper with logo and title
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '40px';
-    wrapper.style.backgroundColor = '#ffffff';
-    wrapper.style.width = `${element.offsetWidth + 80}px`;
-
-    // Add logo header if enabled
-    if (includeLogo) {
-      const header = document.createElement('div');
-      header.style.textAlign = 'center';
-      header.style.marginBottom = '30px';
-
-      // Logo
-      const logo = document.createElement('img');
-      logo.src = '/alrajhi_logo.png';
-      logo.style.width = '150px';
-      logo.style.height = 'auto';
-      logo.style.margin = '0 auto 20px';
-      logo.style.display = 'block';
-      header.appendChild(logo);
-
-      // Title
-      const title = document.createElement('h1');
-      title.textContent = dashboardTitle;
-      title.style.fontSize = '24px';
-      title.style.fontWeight = 'bold';
-      title.style.color = '#1F2937';
-      title.style.marginBottom = '10px';
-      header.appendChild(title);
-
-      // Timestamp
-      const timestamp = document.createElement('p');
-      timestamp.textContent = `Generated on ${new Date().toLocaleString()}`;
-      timestamp.style.fontSize = '14px';
-      timestamp.style.color = '#6B7280';
-      header.appendChild(timestamp);
-
-      // Separator
-      const separator = document.createElement('hr');
-      separator.style.border = 'none';
-      separator.style.borderTop = '2px solid #E5E7EB';
-      separator.style.marginTop = '20px';
-      header.appendChild(separator);
-
-      wrapper.appendChild(header);
-    }
-
-    // Clone the dashboard content
-    const clone = element.cloneNode(true);
-    wrapper.appendChild(clone);
-
-    // Temporarily append to body
+    const { clone, scrollWidth } = prepareClone(element);
+    const wrapper = buildWrapper(clone, scrollWidth, { includeLogo, dashboardTitle });
     document.body.appendChild(wrapper);
 
-    // Capture as canvas
+    await new Promise((r) => setTimeout(r, 200));
+
     const canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
       backgroundColor: '#ffffff',
+      width: wrapper.scrollWidth,
+      height: wrapper.scrollHeight,
+      windowWidth: wrapper.scrollWidth,
+      windowHeight: wrapper.scrollHeight,
     });
 
-    // Remove wrapper
     document.body.removeChild(wrapper);
 
-    // PDF dimensions
     const pdf = new jsPDF({
-      orientation: orientation,
+      orientation,
       unit: 'mm',
       format: pageSize,
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const usableWidth = pdfWidth - margin * 2;
+    const usableHeight = pdfHeight - margin * 2;
+
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
-    const ratio = canvasWidth / canvasHeight;
-    const width = pdfWidth - 20; // 10mm margin on each side
-    const height = width / ratio;
+    const imgWidth = usableWidth;
+    const imgHeight = (canvasHeight * usableWidth) / canvasWidth;
 
-    // Check if content fits on one page
-    if (height <= pdfHeight - 20) {
-      // Single page
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData, 'JPEG', 10, 10, width, height);
-      
-      // Add page number
-      pdf.setFontSize(10);
-      pdf.setTextColor(128);
-      pdf.text(`Page 1 of 1`, pdfWidth - 30, pdfHeight - 10);
+    if (imgHeight <= usableHeight) {
+      // Single page — fits entirely
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+      pdf.setFontSize(8);
+      pdf.setTextColor(160);
+      pdf.text('Page 1 of 1', pdfWidth - 25, pdfHeight - 5);
     } else {
-      // Multiple pages
-      const totalPages = Math.ceil(height / (pdfHeight - 20));
-      
+      // Multi-page — slice the canvas into page-sized chunks
+      const pageCanvasHeight = (usableHeight * canvasWidth) / usableWidth;
+      const totalPages = Math.ceil(canvasHeight / pageCanvasHeight);
+
       for (let i = 0; i < totalPages; i++) {
         if (i > 0) pdf.addPage();
-        
-        const sourceY = i * (canvasHeight / totalPages);
-        const sourceHeight = canvasHeight / totalPages;
-        
-        // Create canvas for this page
+
+        const sourceY = i * pageCanvasHeight;
+        const sliceHeight = Math.min(pageCanvasHeight, canvasHeight - sourceY);
+        const sliceImgHeight = (sliceHeight * usableWidth) / canvasWidth;
+
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = canvasWidth;
-        pageCanvas.height = sourceHeight;
+        pageCanvas.height = sliceHeight;
         const ctx = pageCanvas.getContext('2d');
-        ctx.drawImage(
-          canvas,
-          0,
-          sourceY,
-          canvasWidth,
-          sourceHeight,
-          0,
-          0,
-          canvasWidth,
-          sourceHeight
-        );
-        
-        const imgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-        pdf.addImage(imgData, 'JPEG', 10, 10, width, pdfHeight - 20);
-        
-        // Add page number
-        pdf.setFontSize(10);
-        pdf.setTextColor(128);
-        pdf.text(`Page ${i + 1} of ${totalPages}`, pdfWidth - 30, pdfHeight - 10);
+        ctx.drawImage(canvas, 0, sourceY, canvasWidth, sliceHeight, 0, 0, canvasWidth, sliceHeight);
+
+        const imgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, sliceImgHeight);
+
+        // Page footer
+        pdf.setFontSize(8);
+        pdf.setTextColor(160);
+        pdf.text(`Page ${i + 1} of ${totalPages}`, pdfWidth - 25, pdfHeight - 5);
       }
     }
 
-    // Save PDF
     pdf.save(`${dashboardTitle.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
-
     return { success: true };
   } catch (error) {
     console.error('Export as PDF failed:', error);

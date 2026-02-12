@@ -6,6 +6,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function AreaChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -99,6 +100,26 @@ export default function AreaChartConfig({ widget }) {
 
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Chart Subtype */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chart Subtype</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+              value={style.subtype || "standard"}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateStyle("subtype", v);
+                if (v === "stacked") updateStyle("stacking", "normal");
+                else if (v === "100-stacked") updateStyle("stacking", "percentage");
+                else updateStyle("stacking", "none");
+              }}
+            >
+              <option value="standard">Standard</option>
+              <option value="stacked">Stacked</option>
+              <option value="100-stacked">100% Stacked</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Area Opacity: {(style.areaOpacity ?? 0.4).toFixed(1)}</label>
             <input type="range" min={0} max={100} value={(style.areaOpacity ?? 0.4) * 100} onChange={(e) => updateStyle("areaOpacity", Number(e.target.value) / 100)} className="w-full" />
@@ -185,6 +206,9 @@ export default function AreaChartConfig({ widget }) {
               <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
             )}
           </div>
+
+          {/* Widget Appearance */}
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
         </div>
       )}
 

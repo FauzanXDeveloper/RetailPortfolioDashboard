@@ -6,6 +6,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function PieChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -77,6 +78,26 @@ export default function PieChartConfig({ widget }) {
 
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Chart Subtype */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chart Subtype</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+              value={style.subtype || "pie"}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateStyle("subtype", v);
+                if (v === "donut") updateStyle("chartType", "donut");
+                else if (v === "rose") { updateStyle("chartType", "pie"); updateStyle("roseMode", true); }
+                else { updateStyle("chartType", "pie"); updateStyle("roseMode", false); }
+              }}
+            >
+              <option value="pie">Pie</option>
+              <option value="donut">Donut</option>
+              <option value="rose">Rose / Nightingale</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Chart Type</label>
             <div className="flex gap-3">
@@ -162,6 +183,9 @@ export default function PieChartConfig({ widget }) {
               <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
             )}
           </div>
+
+          {/* Widget Appearance */}
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
         </div>
       )}
 

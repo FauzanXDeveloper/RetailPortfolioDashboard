@@ -6,6 +6,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 const EMOJI_OPTIONS = ["📊", "💰", "📈", "📉", "👥", "💵", "🛒", "📦", "🎯", "⚡", "🔥", "❤️", "⭐", "🏆", "📱", "💎", "🏠", "🚀", "📋", "🔔", "✅", "❌", "🔑", "💼", "🌍", "🔄", "📌", "🏷️", "💡", "🎉"];
 
@@ -227,6 +228,9 @@ export default function KPICardConfig({ widget }) {
               ))}
             </div>
           </div>
+
+          {/* Widget Appearance */}
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
         </div>
       )}
 

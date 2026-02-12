@@ -7,6 +7,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function BarChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -207,6 +208,31 @@ export default function BarChartConfig({ widget }) {
       {/* Style Tab */}
       {tab === "style" && (
         <div className="space-y-3">
+          {/* Chart Subtype */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chart Subtype</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+              value={style.subtype || "vertical"}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateStyle("subtype", v);
+                if (v === "horizontal") updateStyle("orientation", "horizontal");
+                else updateStyle("orientation", "vertical");
+                if (v === "stacked" || v === "100-stacked") updateStyle("stacking", true);
+                else if (v === "grouped") updateStyle("stacking", false);
+                if (v === "100-stacked") updateStyle("stackPercent", true);
+                else updateStyle("stackPercent", false);
+              }}
+            >
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
+              <option value="grouped">Grouped</option>
+              <option value="stacked">Stacked</option>
+              <option value="100-stacked">100% Stacked</option>
+            </select>
+          </div>
+
           {/* Orientation */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Orientation</label>
@@ -370,6 +396,9 @@ export default function BarChartConfig({ widget }) {
               <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
             )}
           </div>
+
+          {/* Widget Appearance */}
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} />
         </div>
       )}
 
