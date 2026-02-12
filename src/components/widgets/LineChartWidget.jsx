@@ -75,11 +75,15 @@ export default function LineChartWidget({ widget }) {
   const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
   const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
   const labelAngle = style.xAxisLabelAngle || 0;
+  const axisFontMap = { default: "inherit", serif: "Georgia, serif", mono: "ui-monospace, monospace", condensed: "'Arial Narrow', sans-serif" };
+  const axisFontFamily = axisFontMap[style.axisFontFamily || "default"] || "inherit";
+  const axisFontWeight = style.axisBold ? "bold" : "normal";
+  const isSparkline = style.sparkline || style.subtype === "sparkline";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: labelAngle !== 0 ? 40 : 5 }}>
-        {style.showGridLines !== false && (
+      <LineChart data={chartData} margin={{ top: 5, right: isSparkline ? 5 : 20, left: isSparkline ? 5 : 10, bottom: labelAngle !== 0 ? 40 : 5 }}>
+        {style.showGridLines !== false && !isSparkline && (
           <CartesianGrid
             strokeDasharray={style.gridDashArray || "3 3"}
             stroke={style.gridColor || "#e5e7eb"}
@@ -87,15 +91,17 @@ export default function LineChartWidget({ widget }) {
         )}
         <XAxis
           dataKey={config.xAxis}
-          tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle" }}
+          tick={isSparkline ? false : { fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
+          hide={isSparkline}
           height={labelAngle ? 60 : undefined}
           interval={style.xAxisInterval === "all" ? 0 : undefined}
-          label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1 } : undefined}
+          label={style.showAxisTitles && style.xAxisTitle && !isSparkline ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1 } : undefined}
         />
         <YAxis
-          tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+          tick={isSparkline ? false : { fontSize, fill: style.axisColor || "#6b7280", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
+          hide={isSparkline}
           tickFormatter={(v) => formatNumber(v, style)}
-          label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1 } : undefined}
+          label={style.showAxisTitles && style.yAxisTitle && !isSparkline ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1 } : undefined}
         />
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && lineKeys.length > 1 && (

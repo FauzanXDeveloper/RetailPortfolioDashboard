@@ -24,6 +24,8 @@ export default function BarChartConfig({ widget }) {
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) =>
     updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) =>
+    updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   return (
     <div>
@@ -216,13 +218,11 @@ export default function BarChartConfig({ widget }) {
               value={style.subtype || "vertical"}
               onChange={(e) => {
                 const v = e.target.value;
-                updateStyle("subtype", v);
-                if (v === "horizontal") updateStyle("orientation", "horizontal");
-                else updateStyle("orientation", "vertical");
-                if (v === "stacked" || v === "100-stacked") updateStyle("stacking", true);
-                else if (v === "grouped") updateStyle("stacking", false);
-                if (v === "100-stacked") updateStyle("stackPercent", true);
-                else updateStyle("stackPercent", false);
+                const updates = { subtype: v };
+                updates.orientation = (v === "horizontal") ? "horizontal" : "vertical";
+                updates.stacking = (v === "stacked" || v === "100-stacked");
+                updates.stackPercent = (v === "100-stacked");
+                updateStyleBatch(updates);
               }}
             >
               <option value="vertical">Vertical</option>
@@ -281,6 +281,23 @@ export default function BarChartConfig({ widget }) {
               <span>-90° (vertical)</span><span>0°</span><span>90°</span>
             </div>
           </div>
+
+          {/* Axis Font */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Axis Font Family</label>
+            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+              value={style.axisFontFamily || "default"} onChange={(e) => updateStyle("axisFontFamily", e.target.value)}>
+              <option value="default">Default (System)</option>
+              <option value="serif">Serif (Georgia)</option>
+              <option value="mono">Monospace</option>
+              <option value="condensed">Condensed</option>
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={style.axisBold || false} onChange={(e) => updateStyle("axisBold", e.target.checked)} />
+            Bold Axis Labels
+          </label>
 
           {/* Bar Width */}
           <div>

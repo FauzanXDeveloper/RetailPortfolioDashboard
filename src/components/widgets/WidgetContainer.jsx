@@ -74,6 +74,7 @@ export default function WidgetContainer({ widget }) {
   const isPinned = widget.pinned;
   const style = widget.config?.style || {};
 
+  // ── Shadow builder ──
   const shadowMap = {
     none: 'none',
     sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
@@ -84,11 +85,43 @@ export default function WidgetContainer({ widget }) {
     '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
   };
 
+  const buildBoxShadow = () => {
+    if (style.shadowCustom) {
+      const x = style.shadowX ?? 0;
+      const y = style.shadowY ?? 4;
+      const blur = style.shadowBlur ?? 8;
+      const spread = style.shadowSpread ?? 0;
+      const color = style.shadowColor || '#000000';
+      const opacity = style.shadowOpacity ?? 0.15;
+      // Parse hex to rgba
+      const r = parseInt(color.slice(1,3), 16) || 0;
+      const g = parseInt(color.slice(3,5), 16) || 0;
+      const b = parseInt(color.slice(5,7), 16) || 0;
+      return `${x}px ${y}px ${blur}px ${spread}px rgba(${r},${g},${b},${opacity})`;
+    }
+    return shadowMap[style.widgetShadow || 'default'];
+  };
+
+  // ── Background color with opacity ──
+  const buildBackgroundColor = () => {
+    const bgColor = style.widgetBgColor || '#ffffff';
+    const bgOpacity = style.widgetBgOpacity ?? 1;
+    if (bgOpacity >= 1 && !bgColor.startsWith('rgba')) return bgColor;
+    // If it's already rgba, just use it
+    if (bgColor.startsWith('rgba')) return bgColor;
+    // Parse hex to rgba
+    const r = parseInt(bgColor.slice(1,3), 16) || 255;
+    const g = parseInt(bgColor.slice(3,5), 16) || 255;
+    const b = parseInt(bgColor.slice(5,7), 16) || 255;
+    return `rgba(${r},${g},${b},${bgOpacity})`;
+  };
+
   const titleFontMap = {
     default: "inherit",
-    serif: "Georgia, serif",
-    mono: "ui-monospace, monospace",
-    condensed: "'Arial Narrow', sans-serif",
+    serif: "Georgia, 'Times New Roman', serif",
+    mono: "'JetBrains Mono', 'Fira Code', ui-monospace, monospace",
+    condensed: "'Arial Narrow', 'Barlow Condensed', sans-serif",
+    rounded: "'Nunito', 'Varela Round', system-ui, sans-serif",
   };
 
   return (
@@ -97,22 +130,28 @@ export default function WidgetContainer({ widget }) {
         isSelected ? "ring-2 ring-brand-200" : ""
       }`}
       style={{
-        backgroundColor: style.widgetBgColor || '#ffffff',
-        opacity: style.widgetBgOpacity ?? 1,
+        backgroundColor: buildBackgroundColor(),
         borderRadius: `${style.widgetBorderRadius ?? 8}px`,
-        boxShadow: shadowMap[style.widgetShadow || 'default'],
+        boxShadow: buildBoxShadow(),
         border: isSelected
           ? '1px solid #a9b5eb'
           : (style.widgetBorderWidth || 0) > 0
             ? `${style.widgetBorderWidth}px ${style.widgetBorderStyle || 'solid'} ${style.widgetBorderColor || '#e5e7eb'}`
             : '1px solid #e5e7eb',
         borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#1a3ab5"}` : undefined,
+        backdropFilter: style.backdropBlur ? `blur(${style.backdropBlur}px)` : undefined,
+        WebkitBackdropFilter: style.backdropBlur ? `blur(${style.backdropBlur}px)` : undefined,
       }}
     >
 
       {/* Header / Drag Handle */}
       {style.showTitle !== false && (
-      <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 bg-gray-50 border-b border-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}>
+      <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 border-b ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}
+        style={{
+          backgroundColor: style.widgetBgColor === '#1f2937' ? '#111827' : undefined,
+          borderColor: style.widgetBgColor === '#1f2937' ? '#374151' : '#f3f4f6',
+        }}
+      >
         <div className="flex items-center gap-1 flex-1 min-w-0" style={{ justifyContent: style.titleAlign === 'center' ? 'center' : style.titleAlign === 'right' ? 'flex-end' : 'flex-start' }}>
           {isPinned ? (
             <Pin size={14} className="text-amber-500 flex-shrink-0" />

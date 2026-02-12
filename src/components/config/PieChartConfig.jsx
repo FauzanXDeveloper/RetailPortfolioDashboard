@@ -21,6 +21,7 @@ export default function PieChartConfig({ widget }) {
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) => updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) => updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   return (
     <div>
@@ -86,10 +87,11 @@ export default function PieChartConfig({ widget }) {
               value={style.subtype || "pie"}
               onChange={(e) => {
                 const v = e.target.value;
-                updateStyle("subtype", v);
-                if (v === "donut") updateStyle("chartType", "donut");
-                else if (v === "rose") { updateStyle("chartType", "pie"); updateStyle("roseMode", true); }
-                else { updateStyle("chartType", "pie"); updateStyle("roseMode", false); }
+                const updates = { subtype: v };
+                if (v === "donut") { updates.chartType = "donut"; updates.roseMode = false; }
+                else if (v === "rose") { updates.chartType = "pie"; updates.roseMode = true; }
+                else { updates.chartType = "pie"; updates.roseMode = false; }
+                updateStyleBatch(updates);
               }}
             >
               <option value="pie">Pie</option>

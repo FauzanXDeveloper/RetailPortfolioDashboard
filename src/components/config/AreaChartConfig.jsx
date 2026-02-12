@@ -23,6 +23,8 @@ export default function AreaChartConfig({ widget }) {
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) =>
     updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) =>
+    updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   return (
     <div>
@@ -108,10 +110,11 @@ export default function AreaChartConfig({ widget }) {
               value={style.subtype || "standard"}
               onChange={(e) => {
                 const v = e.target.value;
-                updateStyle("subtype", v);
-                if (v === "stacked") updateStyle("stacking", "normal");
-                else if (v === "100-stacked") updateStyle("stacking", "percentage");
-                else updateStyle("stacking", "none");
+                const updates = { subtype: v };
+                if (v === "stacked") updates.stacking = "normal";
+                else if (v === "100-stacked") updates.stacking = "percentage";
+                else updates.stacking = "none";
+                updateStyleBatch(updates);
               }}
             >
               <option value="standard">Standard</option>
@@ -146,6 +149,21 @@ export default function AreaChartConfig({ widget }) {
             <input type="range" min={-90} max={90} step={15} value={style.xAxisLabelAngle || 0}
               onChange={(e) => updateStyle("xAxisLabelAngle", Number(e.target.value))} className="w-full" />
           </div>
+          {/* Axis Font */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Axis Font Family</label>
+            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+              value={style.axisFontFamily || "default"} onChange={(e) => updateStyle("axisFontFamily", e.target.value)}>
+              <option value="default">Default (System)</option>
+              <option value="serif">Serif (Georgia)</option>
+              <option value="mono">Monospace</option>
+              <option value="condensed">Condensed</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={style.axisBold || false} onChange={(e) => updateStyle("axisBold", e.target.checked)} />
+            Bold Axis Labels
+          </label>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Dot Size: {style.dotSize || 3}</label>
             <input type="range" min={1} max={8} value={style.dotSize || 3} onChange={(e) => updateStyle("dotSize", Number(e.target.value))} className="w-full" />

@@ -115,6 +115,9 @@ export default function BarChartWidget({ widget }) {
   const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
   const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
   const labelAngle = style.xAxisLabelAngle || 0;
+  const axisFontMap = { default: "inherit", serif: "Georgia, serif", mono: "ui-monospace, monospace", condensed: "'Arial Narrow', sans-serif" };
+  const axisFontFamily = axisFontMap[style.axisFontFamily || "default"] || "inherit";
+  const axisFontWeight = style.axisBold ? "bold" : "normal";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -140,14 +143,14 @@ export default function BarChartWidget({ widget }) {
           <>
             <XAxis
               type="number"
-              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              tick={{ fontSize, fill: style.axisColor || "#6b7280", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
               tickFormatter={(v) => formatNumber(v, style)}
               label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
             />
             <YAxis
               dataKey={config.xAxis}
               type="category"
-              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              tick={{ fontSize, fill: style.axisColor || "#6b7280", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
               width={style.yAxisWidth || 80}
               label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
             />
@@ -156,13 +159,13 @@ export default function BarChartWidget({ widget }) {
           <>
             <XAxis
               dataKey={config.xAxis}
-              tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle" }}
+              tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
               height={labelAngle ? 60 : undefined}
               interval={style.xAxisInterval === "all" ? 0 : undefined}
               label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: labelAngle ? -30 : -5, fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
             />
             <YAxis
-              tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+              tick={{ fontSize, fill: style.axisColor || "#6b7280", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
               tickFormatter={(v) => formatNumber(v, style)}
               width={style.yAxisWidth || 60}
               label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}

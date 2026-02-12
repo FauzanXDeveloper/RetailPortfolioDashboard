@@ -23,6 +23,8 @@ export default function LineChartConfig({ widget }) {
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) =>
     updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) =>
+    updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   return (
     <div>
@@ -124,14 +126,17 @@ export default function LineChartConfig({ widget }) {
               value={style.subtype || "smooth"}
               onChange={(e) => {
                 const v = e.target.value;
-                updateStyle("subtype", v);
-                updateStyle("lineStyle", v === "sparkline" ? "smooth" : v);
+                const updates = { subtype: v, lineStyle: v === "sparkline" ? "smooth" : v };
                 if (v === "sparkline") {
-                  updateStyle("showDataPoints", false);
-                  updateStyle("showGridLines", false);
-                  updateStyle("showLegend", false);
-                  updateStyle("showAxisTitles", false);
+                  updates.showDataPoints = false;
+                  updates.showGridLines = false;
+                  updates.showLegend = false;
+                  updates.showAxisTitles = false;
+                  updates.sparkline = true;
+                } else {
+                  updates.sparkline = false;
                 }
+                updateStyleBatch(updates);
               }}
             >
               <option value="smooth">Smooth</option>
@@ -171,6 +176,21 @@ export default function LineChartConfig({ widget }) {
             <input type="range" min={-90} max={90} step={15} value={style.xAxisLabelAngle || 0}
               onChange={(e) => updateStyle("xAxisLabelAngle", Number(e.target.value))} className="w-full" />
           </div>
+          {/* Axis Font */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Axis Font Family</label>
+            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+              value={style.axisFontFamily || "default"} onChange={(e) => updateStyle("axisFontFamily", e.target.value)}>
+              <option value="default">Default (System)</option>
+              <option value="serif">Serif (Georgia)</option>
+              <option value="mono">Monospace</option>
+              <option value="condensed">Condensed</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={style.axisBold || false} onChange={(e) => updateStyle("axisBold", e.target.checked)} />
+            Bold Axis Labels
+          </label>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Data Label Position</label>
             <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"

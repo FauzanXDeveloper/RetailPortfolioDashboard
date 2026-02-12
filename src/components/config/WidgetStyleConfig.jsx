@@ -1,29 +1,76 @@
 /**
- * WidgetStyleConfig — Shared widget-level style options.
- * Background, border, shadow, padding, title, tooltip, number formatting, margins.
+ * WidgetStyleConfig — Advanced shared widget-level style options.
+ * Background, border, custom shadows, padding, title, tooltip, number format, margins.
  * Reused across all chart/widget config panels.
  */
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { ColorPicker } from "../common/CommonComponents";
 
 const PRESETS = [
-  { label: "Clean", bg: "#ffffff", radius: 12, shadow: "sm", padding: 12, border: false },
-  { label: "Elevated", bg: "#ffffff", radius: 16, shadow: "lg", padding: 16, border: false },
-  { label: "Flat", bg: "#f9fafb", radius: 8, shadow: "none", padding: 10, border: true },
-  { label: "Dark Card", bg: "#1f2937", radius: 12, shadow: "lg", padding: 14, border: false },
-  { label: "Glass", bg: "rgba(255,255,255,0.7)", radius: 20, shadow: "md", padding: 14, border: false },
-  { label: "Bordered", bg: "#ffffff", radius: 10, shadow: "none", padding: 12, border: true },
+  {
+    label: "Clean",
+    preview: { bg: "#ffffff", shadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb" },
+    values: { widgetBgColor: "#ffffff", widgetBgOpacity: 1, widgetBorderRadius: 12, widgetShadow: "sm", widgetPadding: 12, widgetBorderWidth: 1, widgetBorderColor: "#e5e7eb", widgetBorderStyle: "solid", shadowCustom: false, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Elevated",
+    preview: { bg: "#ffffff", shadow: "0 10px 15px rgba(0,0,0,0.1)", border: "none" },
+    values: { widgetBgColor: "#ffffff", widgetBgOpacity: 1, widgetBorderRadius: 16, widgetShadow: "lg", widgetPadding: 16, widgetBorderWidth: 0, shadowCustom: false, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Flat",
+    preview: { bg: "#f9fafb", shadow: "none", border: "2px solid #e5e7eb" },
+    values: { widgetBgColor: "#f9fafb", widgetBgOpacity: 1, widgetBorderRadius: 8, widgetShadow: "none", widgetPadding: 10, widgetBorderWidth: 2, widgetBorderColor: "#e5e7eb", widgetBorderStyle: "solid", shadowCustom: false, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Dark",
+    preview: { bg: "#1f2937", shadow: "0 4px 12px rgba(0,0,0,0.3)", border: "none" },
+    values: { widgetBgColor: "#1f2937", widgetBgOpacity: 1, widgetBorderRadius: 12, widgetShadow: "lg", widgetPadding: 14, widgetBorderWidth: 0, shadowCustom: false, backdropBlur: 0, titleColor: "#f3f4f6", subtitleColor: "#9ca3af", axisColor: "#9ca3af", gridColor: "#374151" },
+  },
+  {
+    label: "Glass",
+    preview: { bg: "rgba(255,255,255,0.3)", shadow: "0 4px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(255,255,255,0.5)" },
+    values: { widgetBgColor: "#ffffff", widgetBgOpacity: 0.55, widgetBorderRadius: 20, widgetShadow: "md", widgetPadding: 14, widgetBorderWidth: 1, widgetBorderColor: "#e5e7eb", widgetBorderStyle: "solid", shadowCustom: false, backdropBlur: 12, titleColor: "#374151" },
+  },
+  {
+    label: "Bordered",
+    preview: { bg: "#ffffff", shadow: "none", border: "2px solid #6366f1" },
+    values: { widgetBgColor: "#ffffff", widgetBgOpacity: 1, widgetBorderRadius: 10, widgetShadow: "none", widgetPadding: 12, widgetBorderWidth: 2, widgetBorderColor: "#6366f1", widgetBorderStyle: "solid", shadowCustom: false, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Soft",
+    preview: { bg: "#ffffff", shadow: "0 8px 32px rgba(0,0,0,0.12)", border: "none" },
+    values: { widgetBgColor: "#ffffff", widgetBgOpacity: 1, widgetBorderRadius: 14, widgetPadding: 14, widgetBorderWidth: 0, shadowCustom: true, shadowX: 0, shadowY: 8, shadowBlur: 32, shadowSpread: -4, shadowColor: "#000000", shadowOpacity: 0.12, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Neumorphism",
+    preview: { bg: "#f0f0f3", shadow: "5px 5px 10px #bebebe, -5px -5px 10px #ffffff", border: "none" },
+    values: { widgetBgColor: "#f0f0f3", widgetBgOpacity: 1, widgetBorderRadius: 16, widgetPadding: 14, widgetBorderWidth: 0, shadowCustom: true, shadowX: 6, shadowY: 6, shadowBlur: 14, shadowSpread: 0, shadowColor: "#000000", shadowOpacity: 0.1, backdropBlur: 0, titleColor: "#4b5563" },
+  },
+  {
+    label: "Brand",
+    preview: { bg: "#1a3ab5", shadow: "0 4px 12px rgba(26,58,181,0.3)", border: "none" },
+    values: { widgetBgColor: "#1a3ab5", widgetBgOpacity: 1, widgetBorderRadius: 12, widgetShadow: "lg", widgetPadding: 14, widgetBorderWidth: 0, shadowCustom: false, backdropBlur: 0, titleColor: "#ffffff", subtitleColor: "#bfdbfe", axisColor: "#bfdbfe", gridColor: "#2d4ec7" },
+  },
 ];
 
 export default function WidgetStyleConfig({ style = {}, updateStyle }) {
   const [section, setSection] = useState("appearance");
 
+  // Apply all preset values at once
+  const applyPreset = useCallback((preset) => {
+    Object.entries(preset.values).forEach(([key, value]) => {
+      updateStyle(key, value);
+    });
+  }, [updateStyle]);
+
   const sections = [
-    { key: "appearance", label: "Appearance" },
-    { key: "title", label: "Title" },
-    { key: "margins", label: "Margins" },
-    { key: "tooltip", label: "Tooltip" },
-    { key: "number", label: "Number Format" },
+    { key: "appearance", label: "🎨 Look" },
+    { key: "shadow", label: "🌓 Shadow" },
+    { key: "title", label: "✏️ Title" },
+    { key: "margins", label: "📐 Margins" },
+    { key: "tooltip", label: "💬 Tooltip" },
+    { key: "number", label: "#️⃣ Number" },
   ];
 
   return (
@@ -36,7 +83,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
           <button
             key={s.key}
             className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
-              section === s.key ? "bg-brand-600 text-white" : "bg-white text-gray-500 hover:bg-gray-100 border border-gray-200"
+              section === s.key ? "bg-brand-600 text-white shadow-sm" : "bg-white text-gray-500 hover:bg-gray-100 border border-gray-200"
             }`}
             onClick={() => setSection(s.key)}
           >
@@ -48,119 +95,138 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
       {/* ── APPEARANCE ── */}
       {section === "appearance" && (
         <div className="space-y-3">
-          {/* Quick Presets */}
+          {/* Quick Presets with Visual Preview */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Quick Presets</label>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-1.5">
               {PRESETS.map((p) => (
                 <button
                   key={p.label}
-                  onClick={() => {
-                    updateStyle("widgetBgColor", p.bg);
-                    updateStyle("widgetBorderRadius", p.radius);
-                    updateStyle("widgetShadow", p.shadow);
-                    updateStyle("widgetPadding", p.padding);
-                    if (p.border) {
-                      updateStyle("widgetBorderWidth", 1);
-                      updateStyle("widgetBorderColor", "#e5e7eb");
-                    } else {
-                      updateStyle("widgetBorderWidth", 0);
-                    }
-                    if (p.bg === "#1f2937") {
-                      updateStyle("titleColor", "#f3f4f6");
-                    }
-                  }}
-                  className="text-[10px] px-2 py-1.5 rounded border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition-colors text-gray-600"
+                  onClick={() => applyPreset(p)}
+                  className="group flex flex-col items-center gap-1 p-1.5 rounded-lg border border-gray-200 hover:border-brand-400 hover:shadow-md transition-all"
                 >
-                  {p.label}
+                  <div
+                    className="w-full h-6 rounded"
+                    style={{
+                      background: p.preview.bg,
+                      boxShadow: p.preview.shadow,
+                      border: p.preview.border || 'none',
+                    }}
+                  />
+                  <span className="text-[9px] font-medium text-gray-500 group-hover:text-brand-600">{p.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Background Color */}
-          <ColorPicker
-            label="Background Color"
-            value={style.widgetBgColor || "#ffffff"}
-            onChange={(c) => updateStyle("widgetBgColor", c)}
-          />
+          <ColorPicker label="Background Color" value={style.widgetBgColor || "#ffffff"} onChange={(c) => updateStyle("widgetBgColor", c)} />
 
-          {/* Background Opacity */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Background Opacity: {Math.round((style.widgetBgOpacity ?? 1) * 100)}%
             </label>
-            <input
-              type="range" min={0} max={100}
-              value={Math.round((style.widgetBgOpacity ?? 1) * 100)}
-              onChange={(e) => updateStyle("widgetBgOpacity", Number(e.target.value) / 100)}
-              className="w-full"
-            />
+            <input type="range" min={0} max={100} value={Math.round((style.widgetBgOpacity ?? 1) * 100)}
+              onChange={(e) => updateStyle("widgetBgOpacity", Number(e.target.value) / 100)} className="w-full accent-brand-600" />
           </div>
 
-          {/* Border Radius */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Border Radius: {style.widgetBorderRadius ?? 8}px
+              Backdrop Blur: {style.backdropBlur ?? 0}px
+              {(style.widgetBgOpacity ?? 1) >= 1 && <span className="text-[10px] text-amber-500 ml-1">(lower opacity to see)</span>}
             </label>
+            <input type="range" min={0} max={30} step={1} value={style.backdropBlur ?? 0}
+              onChange={(e) => updateStyle("backdropBlur", Number(e.target.value))} className="w-full accent-brand-600" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Border Radius: {style.widgetBorderRadius ?? 8}px</label>
             <input type="range" min={0} max={32} value={style.widgetBorderRadius ?? 8}
-              onChange={(e) => updateStyle("widgetBorderRadius", Number(e.target.value))} className="w-full" />
+              onChange={(e) => updateStyle("widgetBorderRadius", Number(e.target.value))} className="w-full accent-brand-600" />
           </div>
 
-          {/* Shadow */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Shadow</label>
-            <select
-              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
-              value={style.widgetShadow || "default"}
-              onChange={(e) => updateStyle("widgetShadow", e.target.value)}
-            >
-              <option value="none">None</option>
-              <option value="sm">Small</option>
-              <option value="default">Default</option>
-              <option value="md">Medium</option>
-              <option value="lg">Large</option>
-              <option value="xl">Extra Large</option>
-              <option value="2xl">2XL</option>
-            </select>
-          </div>
-
-          {/* Padding */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Content Padding: {style.widgetPadding ?? 8}px
-            </label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Content Padding: {style.widgetPadding ?? 8}px</label>
             <input type="range" min={0} max={40} step={2} value={style.widgetPadding ?? 8}
-              onChange={(e) => updateStyle("widgetPadding", Number(e.target.value))} className="w-full" />
+              onChange={(e) => updateStyle("widgetPadding", Number(e.target.value))} className="w-full accent-brand-600" />
           </div>
 
-          {/* Widget Border */}
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Widget Border</label>
+          <div className="space-y-2 p-2 rounded border border-gray-200 bg-white">
+            <label className="block text-xs font-medium text-gray-600">Border</label>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Border Width: {style.widgetBorderWidth ?? 0}px
-              </label>
+              <label className="block text-xs text-gray-500 mb-1">Width: {style.widgetBorderWidth ?? 0}px</label>
               <input type="range" min={0} max={4} value={style.widgetBorderWidth ?? 0}
-                onChange={(e) => updateStyle("widgetBorderWidth", Number(e.target.value))} className="w-full" />
+                onChange={(e) => updateStyle("widgetBorderWidth", Number(e.target.value))} className="w-full accent-brand-600" />
             </div>
             {(style.widgetBorderWidth || 0) > 0 && (
               <>
-                <ColorPicker label="Border Color" value={style.widgetBorderColor || "#e5e7eb"}
-                  onChange={(c) => updateStyle("widgetBorderColor", c)} />
+                <ColorPicker label="Border Color" value={style.widgetBorderColor || "#e5e7eb"} onChange={(c) => updateStyle("widgetBorderColor", c)} />
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Border Style</label>
-                  <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
-                    value={style.widgetBorderStyle || "solid"}
+                  <label className="block text-xs text-gray-500 mb-1">Style</label>
+                  <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.widgetBorderStyle || "solid"}
                     onChange={(e) => updateStyle("widgetBorderStyle", e.target.value)}>
                     <option value="solid">Solid</option>
                     <option value="dashed">Dashed</option>
                     <option value="dotted">Dotted</option>
+                    <option value="double">Double</option>
                   </select>
                 </div>
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── SHADOW ── */}
+      {section === "shadow" && (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <button className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${!style.shadowCustom ? "bg-brand-600 text-white" : "bg-white border border-gray-200 text-gray-500"}`}
+              onClick={() => updateStyle("shadowCustom", false)}>Presets</button>
+            <button className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${style.shadowCustom ? "bg-brand-600 text-white" : "bg-white border border-gray-200 text-gray-500"}`}
+              onClick={() => updateStyle("shadowCustom", true)}>Custom</button>
+          </div>
+
+          {!style.shadowCustom ? (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Shadow Size</label>
+              <div className="grid grid-cols-4 gap-1">
+                {[{ value: "none", label: "None" }, { value: "sm", label: "S" }, { value: "default", label: "M" }, { value: "md", label: "L" }, { value: "lg", label: "XL" }, { value: "xl", label: "2XL" }, { value: "2xl", label: "3XL" }].map((s) => (
+                  <button key={s.value} onClick={() => updateStyle("widgetShadow", s.value)}
+                    className={`text-[10px] px-2 py-1.5 rounded border transition-all ${(style.widgetShadow || "default") === s.value ? "border-brand-400 bg-brand-50 text-brand-700 font-semibold" : "border-gray-200 text-gray-500 hover:border-brand-300"}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-center py-3">
+                <div className="w-20 h-14 rounded-lg bg-white border border-gray-100"
+                  style={{ boxShadow: `${style.shadowX ?? 0}px ${style.shadowY ?? 4}px ${style.shadowBlur ?? 8}px ${style.shadowSpread ?? 0}px rgba(0,0,0,${style.shadowOpacity ?? 0.15})` }} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">X: {style.shadowX ?? 0}px</label>
+                <input type="range" min={-30} max={30} value={style.shadowX ?? 0} onChange={(e) => updateStyle("shadowX", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Y: {style.shadowY ?? 4}px</label>
+                <input type="range" min={-30} max={30} value={style.shadowY ?? 4} onChange={(e) => updateStyle("shadowY", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Blur: {style.shadowBlur ?? 8}px</label>
+                <input type="range" min={0} max={60} value={style.shadowBlur ?? 8} onChange={(e) => updateStyle("shadowBlur", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Spread: {style.shadowSpread ?? 0}px</label>
+                <input type="range" min={-20} max={20} value={style.shadowSpread ?? 0} onChange={(e) => updateStyle("shadowSpread", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Opacity: {Math.round((style.shadowOpacity ?? 0.15) * 100)}%</label>
+                <input type="range" min={0} max={100} value={Math.round((style.shadowOpacity ?? 0.15) * 100)} onChange={(e) => updateStyle("shadowOpacity", Number(e.target.value) / 100)} className="w-full accent-brand-600" />
+              </div>
+              <ColorPicker label="Shadow Color" value={style.shadowColor || "#000000"} onChange={(c) => updateStyle("shadowColor", c)} />
+            </div>
+          )}
         </div>
       )}
 
@@ -170,43 +236,43 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={style.showTitle !== false}
               onChange={(e) => updateStyle("showTitle", e.target.checked)} />
-            Show Title
+            Show Title Bar
           </label>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Title Font Size: {style.titleFontSize || 12}px
             </label>
             <input type="range" min={9} max={28} value={style.titleFontSize || 12}
-              onChange={(e) => updateStyle("titleFontSize", Number(e.target.value))} className="w-full" />
+              onChange={(e) => updateStyle("titleFontSize", Number(e.target.value))} className="w-full accent-brand-600" />
           </div>
           <ColorPicker label="Title Color" value={style.titleColor || "#4b5563"}
             onChange={(c) => updateStyle("titleColor", c)} />
           <div className="flex gap-2">
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-1 text-xs">
               <input type="checkbox" checked={style.titleBold !== false}
                 onChange={(e) => updateStyle("titleBold", e.target.checked)} />
-              Bold
+              <span className="font-bold">B</span>
             </label>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-1 text-xs">
               <input type="checkbox" checked={style.titleItalic || false}
                 onChange={(e) => updateStyle("titleItalic", e.target.checked)} />
-              Italic
+              <span className="italic">I</span>
             </label>
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-1 text-xs">
               <input type="checkbox" checked={style.titleUnderline || false}
                 onChange={(e) => updateStyle("titleUnderline", e.target.checked)} />
-              Underline
+              <span className="underline">U</span>
             </label>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Title Alignment</label>
-            <div className="flex gap-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Alignment</label>
+            <div className="flex gap-1">
               {["left", "center", "right"].map((a) => (
-                <label key={a} className="flex items-center gap-1 text-xs">
-                  <input type="radio" name="titleAlign" checked={(style.titleAlign || "left") === a}
-                    onChange={() => updateStyle("titleAlign", a)} />
+                <button key={a}
+                  className={`flex-1 px-2 py-1 rounded text-xs transition-colors ${(style.titleAlign || "left") === a ? "bg-brand-100 text-brand-700 border border-brand-300" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+                  onClick={() => updateStyle("titleAlign", a)}>
                   {a.charAt(0).toUpperCase() + a.slice(1)}
-                </label>
+                </button>
               ))}
             </div>
           </div>
@@ -219,11 +285,11 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
               <option value="serif">Serif (Georgia)</option>
               <option value="mono">Monospace</option>
               <option value="condensed">Condensed</option>
+              <option value="rounded">Rounded</option>
             </select>
           </div>
-          {/* Subtitle / Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Subtitle (optional)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Subtitle</label>
             <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
               value={style.subtitle || ""}
               onChange={(e) => updateStyle("subtitle", e.target.value)}
@@ -249,7 +315,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
                 {label}: {style[key] ?? def}px
               </label>
               <input type="range" min={0} max={80} value={style[key] ?? def}
-                onChange={(e) => updateStyle(key, Number(e.target.value))} className="w-full" />
+                onChange={(e) => updateStyle(key, Number(e.target.value))} className="w-full accent-brand-600" />
             </div>
           ))}
         </div>
@@ -270,7 +336,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tooltip Border Radius: {style.tooltipRadius ?? 8}px</label>
             <input type="range" min={0} max={20} value={style.tooltipRadius ?? 8}
-              onChange={(e) => updateStyle("tooltipRadius", Number(e.target.value))} className="w-full" />
+              onChange={(e) => updateStyle("tooltipRadius", Number(e.target.value))} className="w-full accent-brand-600" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tooltip Font Size</label>
@@ -310,14 +376,14 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
               <option value="integer">Integer (1235)</option>
             </select>
           </div>
-          {textInput("Prefix", "numberPrefix", "", "e.g. $ or SAR ", updateStyle)}
-          {textInput("Suffix", "numberSuffix", "", "e.g. % or units", updateStyle)}
+          {textInput("Prefix", "numberPrefix", style, "e.g. $ or SAR ", updateStyle)}
+          {textInput("Suffix", "numberSuffix", style, "e.g. % or units", updateStyle)}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Decimal Places: {style.decimalPlaces ?? 2}
             </label>
             <input type="range" min={0} max={6} value={style.decimalPlaces ?? 2}
-              onChange={(e) => updateStyle("decimalPlaces", Number(e.target.value))} className="w-full" />
+              onChange={(e) => updateStyle("decimalPlaces", Number(e.target.value))} className="w-full accent-brand-600" />
           </div>
         </div>
       )}
@@ -325,11 +391,12 @@ export default function WidgetStyleConfig({ style = {}, updateStyle }) {
   );
 }
 
-function textInput(label, key, defVal, placeholder, updateStyle) {
+function textInput(label, key, style, placeholder, updateStyle) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
       <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+        value={style[key] || ""}
         placeholder={placeholder}
         onChange={(e) => updateStyle(key, e.target.value)} />
     </div>

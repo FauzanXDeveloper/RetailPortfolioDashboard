@@ -69,6 +69,9 @@ export default function AreaChartWidget({ widget }) {
   const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
   const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
   const labelAngle = style.xAxisLabelAngle || 0;
+  const axisFontMap = { default: "inherit", serif: "Georgia, serif", mono: "ui-monospace, monospace", condensed: "'Arial Narrow', sans-serif" };
+  const axisFontFamily = axisFontMap[style.axisFontFamily || "default"] || "inherit";
+  const axisFontWeight = style.axisBold ? "bold" : "normal";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -78,12 +81,12 @@ export default function AreaChartWidget({ widget }) {
         )}
         <XAxis
           dataKey={config.xAxis}
-          tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle" }}
+          tick={{ fontSize, fill: style.axisColor || "#6b7280", angle: labelAngle, textAnchor: labelAngle ? "end" : "middle", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
           height={labelAngle ? 60 : undefined}
           label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1 } : undefined}
         />
         <YAxis
-          tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
+          tick={{ fontSize, fill: style.axisColor || "#6b7280", fontFamily: axisFontFamily, fontWeight: axisFontWeight }}
           tickFormatter={(v) => formatNumber(v, style)}
           label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1 } : undefined}
         />
