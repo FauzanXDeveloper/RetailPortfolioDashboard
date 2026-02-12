@@ -103,23 +103,26 @@ const useDashboardStore = create((set, get) => {
   // Environment Actions
   // ────────────────────────────────────────────
 
-  /** Create or enter an environment by ID */
+  /** Check if an environment exists (returns env object or null) */
+  checkEnvironment: async (envId) => {
+    const trimmed = envId.trim();
+    if (!trimmed) return null;
+    try {
+      const env = await loadEnvironment(trimmed);
+      return env || null;
+    } catch (e) {
+      console.error("Failed to check environment:", e);
+      return null;
+    }
+  },
+
+  /** Enter an existing environment by ID */
   enterEnvironment: async (envId) => {
     const trimmed = envId.trim();
     if (!trimmed) return false;
     try {
-      let env = await loadEnvironment(trimmed);
-      if (!env) {
-        // Create new environment
-        env = {
-          id: trimmed,
-          dashboards: [],
-          dataSources: [],
-          createdAt: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        };
-        await saveEnvironment(env);
-      }
+      const env = await loadEnvironment(trimmed);
+      if (!env) return false;
       setSessionEnvId(trimmed);
       updateLastActive();
       set({
@@ -138,6 +141,45 @@ const useDashboardStore = create((set, get) => {
       return true;
     } catch (e) {
       console.error("Failed to enter environment:", e);
+      return false;
+    }
+  },
+
+  /** Create a new environment with a display name */
+  createEnvironment: async (envId, displayName) => {
+    const trimmed = envId.trim();
+    if (!trimmed) return false;
+    try {
+      // Check if already exists
+      const existing = await loadEnvironment(trimmed);
+      if (existing) return false; // cannot create duplicate
+      const env = {
+        id: trimmed,
+        name: displayName || trimmed,
+        dashboards: [],
+        dataSources: [],
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      };
+      await saveEnvironment(env);
+      setSessionEnvId(trimmed);
+      updateLastActive();
+      set({
+        environmentId: trimmed,
+        dataSources: [],
+        dashboards: [],
+        currentDashboard: {
+          id: null,
+          name: "Untitled Dashboard",
+          widgets: [],
+          globalFilters: { search: "", dynamic: [] },
+        },
+        configPanelOpen: false,
+        selectedWidgetId: null,
+      });
+      return true;
+    } catch (e) {
+      console.error("Failed to create environment:", e);
       return false;
     }
   },

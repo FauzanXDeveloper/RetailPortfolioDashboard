@@ -16,7 +16,6 @@ import {
   Image as ImageIcon,
   FileText,
   Filter,
-  LogIn,
   LogOut,
   Trash2,
 } from "lucide-react";
@@ -39,14 +38,11 @@ export default function Header() {
     clearGlobalFilters,
     setDataManagerOpen,
     environmentId,
-    enterEnvironment,
     leaveEnvironment,
     deleteCurrentEnvironment,
   } = useDashboardStore();
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [envInput, setEnvInput] = useState("");
-  const [envLoading, setEnvLoading] = useState(false);
   const [showDeleteEnvConfirm, setShowDeleteEnvConfirm] = useState(false);
 
   const [showLoadDropdown, setShowLoadDropdown] = useState(false);
@@ -56,14 +52,6 @@ export default function Header() {
   const titleRef = useRef(null);
   // eslint-disable-next-line no-unused-vars
   const _ = titleRef; // keep ref for future use
-
-  const handleEnterEnv = async () => {
-    if (!envInput.trim()) return;
-    setEnvLoading(true);
-    await enterEnvironment(envInput.trim());
-    setEnvInput("");
-    setEnvLoading(false);
-  };
 
   const handleExportJSON = () => {
     exportAsJSON(currentDashboard);
@@ -120,46 +108,23 @@ export default function Header() {
     <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-2 flex flex-col gap-2 z-20 relative">
       {/* Environment Bar */}
       <div className="flex items-center gap-2 text-xs">
-        {environmentId ? (
-          <>
-            <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200">
-              <span className="font-bold">🌐 {environmentId}</span>
-            </div>
-            <button
-              onClick={leaveEnvironment}
-              className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
-              title="Leave environment"
-            >
-              <LogOut size={12} /> Leave
-            </button>
-            <button
-              onClick={() => setShowDeleteEnvConfirm(true)}
-              className="flex items-center gap-1 px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
-              title="Delete environment"
-            >
-              <Trash2 size={12} /> Delete Env
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="text-gray-500 font-medium">Enter Environment:</span>
-            <input
-              className="text-xs border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-indigo-400 w-36"
-              placeholder="Name or code..."
-              value={envInput}
-              onChange={(e) => setEnvInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleEnterEnv()}
-            />
-            <button
-              onClick={handleEnterEnv}
-              disabled={envLoading || !envInput.trim()}
-              className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
-            >
-              <LogIn size={12} /> {envLoading ? "Loading..." : "Enter"}
-            </button>
-            <span className="text-gray-400 italic ml-1">Create or enter an existing environment</span>
-          </>
-        )}
+        <div className="flex items-center gap-1.5 bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-200">
+          <span className="font-bold">🌐 {environmentId}</span>
+        </div>
+        <button
+          onClick={leaveEnvironment}
+          className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
+          title="Leave environment"
+        >
+          <LogOut size={12} /> Leave
+        </button>
+        <button
+          onClick={() => setShowDeleteEnvConfirm(true)}
+          className="flex items-center gap-1 px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+          title="Delete environment"
+        >
+          <Trash2 size={12} /> Delete Env
+        </button>
       </div>
 
       {/* Delete Environment Confirmation Modal */}
