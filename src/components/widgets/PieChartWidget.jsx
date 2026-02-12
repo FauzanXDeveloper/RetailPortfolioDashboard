@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
 
 const RADIAN = Math.PI / 180;
 
@@ -136,14 +136,8 @@ export default function PieChartWidget({ widget }) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value) => Number(value).toLocaleString()}
-          contentStyle={{
-            fontSize: labelFontSize,
-            borderRadius: 8,
-            backgroundColor: style.tooltipBgColor || "#fff",
-            color: style.tooltipTextColor || "#374151",
-            border: style.tooltipBorder !== false ? "1px solid #e5e7eb" : "none",
-          }}
+          formatter={(value) => formatNumber(value, style)}
+          contentStyle={buildTooltipStyle(style)}
         />
         {style.showLegend !== false && (
           <Legend

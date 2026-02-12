@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
 
 export default function LineChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -94,10 +94,10 @@ export default function LineChartWidget({ widget }) {
         />
         <YAxis
           tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
-          tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+          tickFormatter={(v) => formatNumber(v, style)}
           label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1 } : undefined}
         />
-        <Tooltip contentStyle={{ fontSize, borderRadius: 8 }} formatter={(v) => Number(v).toLocaleString()} />
+        <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && lineKeys.length > 1 && (
           <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} />
         )}
@@ -115,7 +115,7 @@ export default function LineChartWidget({ widget }) {
               position: style.dataLabelPosition || "top",
               fontSize: style.dataLabelSize || 10,
               fill: style.dataLabelColor || "#374151",
-              formatter: (v) => style.showValueFormatted ? Number(v).toLocaleString() : v,
+              formatter: (v) => formatNumber(v, style),
             } : false}
           />
         ))}

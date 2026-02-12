@@ -68,8 +68,6 @@ export default function WidgetContainer({ widget }) {
   const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId, toggleWidgetPin } =
     useDashboardStore();
   const [editingTitle, setEditingTitle] = useState(false);
-  const [headerHidden, setHeaderHidden] = useState(false);
-  const [contextMenu, setContextMenu] = useState(null);
 
   const WidgetComponent = WIDGET_COMPONENTS[widget.type];
   const isSelected = selectedWidgetId === widget.i;
@@ -83,15 +81,15 @@ export default function WidgetContainer({ widget }) {
     md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
     lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
     xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
   };
 
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY });
+  const titleFontMap = {
+    default: "inherit",
+    serif: "Georgia, serif",
+    mono: "ui-monospace, monospace",
+    condensed: "'Arial Narrow', sans-serif",
   };
-
-  const closeContextMenu = () => setContextMenu(null);
 
   return (
     <div
@@ -100,67 +98,22 @@ export default function WidgetContainer({ widget }) {
       }`}
       style={{
         backgroundColor: style.widgetBgColor || '#ffffff',
+        opacity: style.widgetBgOpacity ?? 1,
         borderRadius: `${style.widgetBorderRadius ?? 8}px`,
         boxShadow: shadowMap[style.widgetShadow || 'default'],
-        border: isSelected ? '1px solid #a9b5eb' : '1px solid #e5e7eb',
+        border: isSelected
+          ? '1px solid #a9b5eb'
+          : (style.widgetBorderWidth || 0) > 0
+            ? `${style.widgetBorderWidth}px ${style.widgetBorderStyle || 'solid'} ${style.widgetBorderColor || '#e5e7eb'}`
+            : '1px solid #e5e7eb',
         borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#1a3ab5"}` : undefined,
       }}
-      onContextMenu={handleContextMenu}
     >
-      {/* Right-click context menu — native OS style */}
-      {contextMenu && (
-        <>
-          <div className="fixed inset-0 z-[9999]" onClick={closeContextMenu} onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }} />
-          <div
-            className="fixed z-[10000] min-w-[180px]"
-            style={{
-              left: contextMenu.x,
-              top: contextMenu.y,
-              backgroundColor: 'rgba(255,255,255,0.98)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderRadius: '6px',
-              boxShadow: '0 6px 24px rgba(0,0,0,0.16), 0 0 1px rgba(0,0,0,0.12)',
-              border: '0.5px solid rgba(0,0,0,0.08)',
-              padding: '4px 0',
-            }}
-          >
-            <button
-              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-between gap-4"
-              onClick={() => { setHeaderHidden(!headerHidden); closeContextMenu(); }}
-            >
-              <span>{headerHidden ? "Show Header" : "Hide Header"}</span>
-              <span className="text-[11px] text-gray-400" style={{ fontFamily: 'system-ui' }}>{headerHidden ? "⌘H" : "⌘H"}</span>
-            </button>
-            <div style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.08)', margin: '4px 0' }} />
-            <button
-              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-between gap-4"
-              onClick={() => { toggleWidgetPin(widget.i); closeContextMenu(); }}
-            >
-              <span>{isPinned ? "Unpin Widget" : "Pin Widget"}</span>
-              <span className="text-[11px] text-gray-400" style={{ fontFamily: 'system-ui' }}>{isPinned ? "⌘U" : "⌘P"}</span>
-            </button>
-            <div style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.08)', margin: '4px 0' }} />
-            <button
-              className="w-full text-left px-3 py-[6px] text-[13px] text-gray-700 hover:bg-blue-500 hover:text-white transition-colors"
-              onClick={() => { selectWidget(widget.i); closeContextMenu(); }}
-            >
-              Configure
-            </button>
-            <button
-              className="w-full text-left px-3 py-[6px] text-[13px] text-red-600 hover:bg-red-500 hover:text-white transition-colors"
-              onClick={() => { removeWidget(widget.i); closeContextMenu(); }}
-            >
-              Remove Widget
-            </button>
-          </div>
-        </>
-      )}
 
       {/* Header / Drag Handle */}
-      {!headerHidden && (
+      {style.showTitle !== false && (
       <div className={`${isPinned ? '' : 'drag-handle'} flex items-center justify-between px-2 py-1.5 bg-gray-50 border-b border-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'} select-none min-h-[32px]`}>
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+        <div className="flex items-center gap-1 flex-1 min-w-0" style={{ justifyContent: style.titleAlign === 'center' ? 'center' : style.titleAlign === 'right' ? 'flex-end' : 'flex-start' }}>
           {isPinned ? (
             <Pin size={14} className="text-amber-500 flex-shrink-0" />
           ) : (
@@ -178,21 +131,31 @@ export default function WidgetContainer({ widget }) {
               onMouseDown={(e) => e.stopPropagation()}
             />
           ) : (
-            <span
-              className="text-xs text-gray-600 truncate cursor-text"
-              style={{
-                fontSize: style.titleFontSize ? `${style.titleFontSize}px` : undefined,
-                color: style.titleColor || undefined,
-                fontWeight: style.titleBold !== false ? 600 : 400,
-              }}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                setEditingTitle(true);
-              }}
-              title="Double-click to edit title"
-            >
-              {widget.title}
-            </span>
+            <div className="min-w-0">
+              <span
+                className="text-xs text-gray-600 truncate cursor-text block"
+                style={{
+                  fontSize: style.titleFontSize ? `${style.titleFontSize}px` : undefined,
+                  color: style.titleColor || undefined,
+                  fontWeight: style.titleBold !== false ? 600 : 400,
+                  fontStyle: style.titleItalic ? 'italic' : undefined,
+                  textDecoration: style.titleUnderline ? 'underline' : undefined,
+                  fontFamily: titleFontMap[style.titleFont || 'default'],
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTitle(true);
+                }}
+                title="Double-click to edit title"
+              >
+                {widget.title}
+              </span>
+              {style.subtitle && (
+                <span className="text-[10px] block truncate" style={{ color: style.subtitleColor || '#9ca3af' }}>
+                  {style.subtitle}
+                </span>
+              )}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -231,11 +194,6 @@ export default function WidgetContainer({ widget }) {
           </button>
         </div>
       </div>
-      )}
-
-      {/* Minimal drag handle when header is hidden */}
-      {headerHidden && (
-        <div className={`${isPinned ? '' : 'drag-handle'} h-1.5 bg-gray-100 ${isPinned ? 'cursor-default' : 'cursor-move'}`} />
       )}
 
       {/* Content Area */}

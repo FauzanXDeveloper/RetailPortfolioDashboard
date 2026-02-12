@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, sortData, applyGlobalFilters, limitData, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
 
 export default function BarChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -141,7 +141,7 @@ export default function BarChartWidget({ widget }) {
             <XAxis
               type="number"
               tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
-              tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+              tickFormatter={(v) => formatNumber(v, style)}
               label={style.showAxisTitles && style.xAxisTitle ? { value: style.xAxisTitle, position: "insideBottom", offset: -5, fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
             />
             <YAxis
@@ -163,21 +163,15 @@ export default function BarChartWidget({ widget }) {
             />
             <YAxis
               tick={{ fontSize, fill: style.axisColor || "#6b7280" }}
-              tickFormatter={style.showValueFormatted ? (v) => Number(v).toLocaleString() : undefined}
+              tickFormatter={(v) => formatNumber(v, style)}
               width={style.yAxisWidth || 60}
               label={style.showAxisTitles && style.yAxisTitle ? { value: style.yAxisTitle, angle: -90, position: "insideLeft", fontSize: fontSize - 1, fill: style.axisColor || "#6b7280" } : undefined}
             />
           </>
         )}
         <Tooltip
-          contentStyle={{
-            fontSize,
-            borderRadius: 8,
-            backgroundColor: style.tooltipBgColor || "#fff",
-            color: style.tooltipTextColor || "#374151",
-            border: style.tooltipBorder !== false ? "1px solid #e5e7eb" : "none",
-          }}
-          formatter={(value) => style.stackPercent ? `${Number(value).toFixed(1)}%` : Number(value).toLocaleString()}
+          contentStyle={buildTooltipStyle(style)}
+          formatter={(value) => style.stackPercent ? `${Number(value).toFixed(1)}%` : formatNumber(value, style)}
         />
         {style.showLegend !== false && barKeys.length > 1 && (
           <Legend
@@ -205,7 +199,7 @@ export default function BarChartWidget({ widget }) {
                   fill: style.dataLabelColor || "#374151",
                   fontWeight: style.dataLabelBold ? "bold" : "normal",
                 }}
-                formatter={(v) => style.showValueFormatted ? Number(v).toLocaleString() : v}
+                formatter={(v) => formatNumber(v, style)}
               />
             )}
             {!isGrouped &&

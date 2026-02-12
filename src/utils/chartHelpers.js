@@ -34,6 +34,70 @@ export function getColor(index, scheme = "Default") {
 }
 
 /**
+ * Format a number according to style config.
+ * Used by chart tooltips, data labels, and axis ticks.
+ */
+export function formatNumber(value, style = {}) {
+  if (value == null || isNaN(value)) return value;
+  const num = Number(value);
+  const fmt = style.numberFormat || "auto";
+  const prefix = style.numberPrefix || "";
+  const suffix = style.numberSuffix || "";
+  const dp = style.decimalPlaces ?? 2;
+
+  let formatted;
+  switch (fmt) {
+    case "comma":
+      formatted = num.toLocaleString("en-US");
+      break;
+    case "compact": {
+      const abs = Math.abs(num);
+      if (abs >= 1e9) formatted = (num / 1e9).toFixed(1) + "B";
+      else if (abs >= 1e6) formatted = (num / 1e6).toFixed(1) + "M";
+      else if (abs >= 1e3) formatted = (num / 1e3).toFixed(1) + "K";
+      else formatted = num.toFixed(dp);
+      break;
+    }
+    case "currency_usd":
+      formatted = "$" + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      break;
+    case "currency_sar":
+      formatted = "SAR " + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      break;
+    case "percent":
+      formatted = num.toFixed(dp) + "%";
+      break;
+    case "decimal_1":
+      formatted = num.toFixed(1);
+      break;
+    case "decimal_2":
+      formatted = num.toFixed(2);
+      break;
+    case "integer":
+      formatted = Math.round(num).toLocaleString("en-US");
+      break;
+    default: // auto
+      formatted = num.toLocaleString();
+  }
+  return prefix + formatted + suffix;
+}
+
+/**
+ * Build tooltip style from widget style config.
+ */
+export function buildTooltipStyle(style = {}) {
+  const tipFontMap = { small: 9, medium: 11, large: 13 };
+  return {
+    fontSize: tipFontMap[style.tooltipFontSize || "medium"] || 11,
+    borderRadius: style.tooltipRadius ?? 8,
+    backgroundColor: style.tooltipBgColor || "#fff",
+    color: style.tooltipTextColor || "#374151",
+    border: style.tooltipBorder !== false ? "1px solid #e5e7eb" : "none",
+    boxShadow: style.tooltipShadow !== false ? "0 4px 12px rgba(0,0,0,0.08)" : "none",
+  };
+}
+
+/**
  * Build default widget config for each widget type.
  */
 export function getDefaultWidgetConfig(type) {

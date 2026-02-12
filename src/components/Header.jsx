@@ -431,6 +431,7 @@ export default function Header() {
 
 /**
  * Inline dropdown for each dynamic global filter in the header bar.
+ * Supports flat list mode AND date hierarchy mode (Year → Month → Date).
  */
 function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
   const [open, setOpen] = useState(false);
@@ -451,24 +452,89 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
     return [...values].sort();
   }, [dataSources, df.field]);
 
+  // ── Date hierarchy helpers ──
+  const dateHierarchy = React.useMemo(() => {
+    if (df.mode !== "date_hierarchy") return null;
+    const years = {};
+    uniqueValues.forEach((v) => {
+      const d = new Date(v);
+      if (isNaN(d.getTime())) return;
+      const y = d.getFullYear();
+      const m = d.getMonth(); // 0-11
+      if (!years[y]) years[y] = {};
+      if (!years[y][m]) years[y][m] = [];
+      years[y][m].push(v);
+    });
+    return years;
+  }, [df.mode, uniqueValues]);
+
+  const availableYears = React.useMemo(() => {
+    if (!dateHierarchy) return [];
+    return Object.keys(dateHierarchy).map(Number).sort((a, b) => b - a);
+  }, [dateHierarchy]);
+
+  const MONTH_NAMES = React.useMemo(() => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], []);
+
+  const availableMonths = React.useMemo(() => {
+    if (!dateHierarchy || !df.selectedYear) return [];
+    const yr = dateHierarchy[df.selectedYear];
+    if (!yr) return [];
+    return Object.keys(yr).map(Number).sort((a, b) => a - b);
+  }, [dateHierarchy, df.selectedYear]);
+
+  const availableDates = React.useMemo(() => {
+    if (!dateHierarchy || !df.selectedYear || df.selectedMonth == null) return [];
+    const yr = dateHierarchy[df.selectedYear];
+    if (!yr || !yr[df.selectedMonth]) return [];
+    return yr[df.selectedMonth].sort();
+  }, [dateHierarchy, df.selectedYear, df.selectedMonth]);
+
+  const updateFilter = (updates) => {
+    const updated = (gf.dynamic || []).map((d) =>
+      d.id === df.id ? { ...d, ...updates } : d
+    );
+    setGlobalFilter("dynamic", updated);
+  };
+
   const toggleValue = (val) => {
     const current = df.values || [];
     const next = current.includes(val)
       ? current.filter((v) => v !== val)
       : [...current, val];
-    const updated = (gf.dynamic || []).map((d) =>
-      d.id === df.id ? { ...d, values: next } : d
-    );
-    setGlobalFilter("dynamic", updated);
+    updateFilter({ values: next });
   };
 
   const clearFilter = (e) => {
     e.stopPropagation();
-    const updated = (gf.dynamic || []).map((d) =>
-      d.id === df.id ? { ...d, values: [] } : d
-    );
-    setGlobalFilter("dynamic", updated);
+    updateFilter({ values: [], selectedYear: null, selectedMonth: null });
   };
+
+  // Select all dates for a year
+  const selectYear = (year) => {
+    const yr = dateHierarchy[year];
+    if (!yr) return;
+    const allDates = Object.values(yr).flat();
+    updateFilter({ selectedYear: year, selectedMonth: null, values: allDates });
+  };
+
+  // Select all dates for a month
+  const selectMonth = (month) => {
+    const yr = dateHierarchy[df.selectedYear];
+    if (!yr || !yr[month]) return;
+    updateFilter({ selectedMonth: month, values: yr[month] });
+  };
+
+  // Badge text
+  const badgeText = React.useMemo(() => {
+    if (!hasValues) return null;
+    if (df.mode === "date_hierarchy" && df.selectedYear) {
+      if (df.selectedMonth != null) {
+        return `${MONTH_NAMES[df.selectedMonth]} ${df.selectedYear}`;
+      }
+      return `${df.selectedYear}`;
+    }
+    return df.values.length;
+  }, [df, hasValues, MONTH_NAMES]);
 
   return (
     <div className="relative">
@@ -485,7 +551,7 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
         {hasValues && (
           <>
             <span className="bg-purple-200 text-purple-800 px-1 py-0.5 rounded-full text-[10px] font-bold">
-              {df.values.length}
+              {badgeText}
             </span>
             <button onClick={clearFilter} className="hover:text-red-500 ml-0.5">
               <X size={10} />
@@ -498,43 +564,156 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
-            <div className="sticky top-0 bg-white px-2 py-1.5 border-b border-gray-100">
-              <label className="flex items-center gap-1.5 text-xs cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5">
-                <input
-                  type="checkbox"
-                  checked={df.values?.length === uniqueValues.length && uniqueValues.length > 0}
-                  onChange={(e) => {
-                    const newValues = e.target.checked ? [...uniqueValues] : [];
-                    const updated = (gf.dynamic || []).map((d) =>
-                      d.id === df.id ? { ...d, values: newValues } : d
-                    );
-                    setGlobalFilter("dynamic", updated);
-                  }}
-                  className="rounded"
-                />
-                <span className="font-medium text-gray-500">Select All</span>
-              </label>
-            </div>
-            <div className="p-1">
-              {uniqueValues.map((v) => (
-                <label
-                  key={v}
-                  className="flex items-center gap-1.5 text-xs px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={(df.values || []).includes(v)}
-                    onChange={() => toggleValue(v)}
-                    className="rounded"
-                  />
-                  <span className="truncate">{v}</span>
-                </label>
-              ))}
-              {uniqueValues.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-3">No data imported yet</p>
-              )}
-            </div>
+          <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto" style={{ width: df.mode === "date_hierarchy" ? 280 : 208 }}>
+
+            {/* ── DATE HIERARCHY MODE ── */}
+            {df.mode === "date_hierarchy" ? (
+              <div className="p-2 space-y-2">
+                {/* Year Dropdown */}
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Year</label>
+                  <div className="flex flex-wrap gap-1">
+                    {availableYears.map((y) => (
+                      <button
+                        key={y}
+                        onClick={() => selectYear(y)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                          df.selectedYear === y
+                            ? "bg-brand-600 text-white"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                    {availableYears.length === 0 && (
+                      <p className="text-[10px] text-gray-400">No date values found</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Month Dropdown — only if a year is selected */}
+                {df.selectedYear && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Month</label>
+                    <div className="grid grid-cols-4 gap-1">
+                      <button
+                        onClick={() => {
+                          // Select entire year
+                          selectYear(df.selectedYear);
+                        }}
+                        className={`px-1.5 py-1 rounded text-[10px] font-medium transition-colors col-span-4 ${
+                          df.selectedMonth == null
+                            ? "bg-brand-100 text-brand-700"
+                            : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        All Months
+                      </button>
+                      {availableMonths.map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => selectMonth(m)}
+                          className={`px-1.5 py-1 rounded text-xs font-medium transition-colors ${
+                            df.selectedMonth === m
+                              ? "bg-brand-600 text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {MONTH_NAMES[m]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Date checkboxes — only if year AND month selected */}
+                {df.selectedYear && df.selectedMonth != null && availableDates.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Date ({(df.values || []).length} selected)
+                    </label>
+                    <div className="max-h-32 overflow-y-auto border border-gray-100 rounded p-1 space-y-0.5">
+                      <label className="flex items-center gap-1.5 text-xs px-1 py-0.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={availableDates.every((d) => (df.values || []).includes(d))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const merged = [...new Set([...(df.values || []), ...availableDates])];
+                              updateFilter({ values: merged });
+                            } else {
+                              updateFilter({ values: (df.values || []).filter((v) => !availableDates.includes(v)) });
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <span className="font-medium text-gray-500">Select All Dates</span>
+                      </label>
+                      <hr className="border-gray-100" />
+                      {availableDates.map((v) => {
+                        const d = new Date(v);
+                        const displayDate = !isNaN(d.getTime()) ? `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` : v;
+                        return (
+                          <label key={v} className="flex items-center gap-1.5 text-xs px-1 py-0.5 hover:bg-gray-50 rounded cursor-pointer">
+                            <input type="checkbox" checked={(df.values || []).includes(v)}
+                              onChange={() => toggleValue(v)} className="rounded" />
+                            <span className="truncate">{displayDate}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Clear */}
+                {hasValues && (
+                  <button
+                    onClick={(e) => clearFilter(e)}
+                    className="text-[10px] text-red-500 hover:text-red-700"
+                  >
+                    Clear all selections
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* ── FLAT LIST MODE ── */
+              <>
+                <div className="sticky top-0 bg-white px-2 py-1.5 border-b border-gray-100">
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5">
+                    <input
+                      type="checkbox"
+                      checked={df.values?.length === uniqueValues.length && uniqueValues.length > 0}
+                      onChange={(e) => {
+                        const newValues = e.target.checked ? [...uniqueValues] : [];
+                        updateFilter({ values: newValues });
+                      }}
+                      className="rounded"
+                    />
+                    <span className="font-medium text-gray-500">Select All</span>
+                  </label>
+                </div>
+                <div className="p-1">
+                  {uniqueValues.map((v) => (
+                    <label
+                      key={v}
+                      className="flex items-center gap-1.5 text-xs px-2 py-1 hover:bg-gray-50 rounded cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(df.values || []).includes(v)}
+                        onChange={() => toggleValue(v)}
+                        className="rounded"
+                      />
+                      <span className="truncate">{v}</span>
+                    </label>
+                  ))}
+                  {uniqueValues.length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-3">No data imported yet</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
