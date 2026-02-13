@@ -181,6 +181,7 @@ export default function BarChartWidget({ widget }) {
             wrapperStyle={{ fontSize: fontSize - 1 }}
             verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
             align={style.legendAlign || "center"}
+            layout={style.legendLayout || "horizontal"}
           />
         )}
         {barKeys.map((key, idx) => (

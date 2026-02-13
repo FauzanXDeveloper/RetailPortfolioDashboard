@@ -105,7 +105,7 @@ export default function LineChartWidget({ widget }) {
         />
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && lineKeys.length > 1 && (
-          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} />
+          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
         )}
         {lineKeys.map((key, idx) => (
           <Line

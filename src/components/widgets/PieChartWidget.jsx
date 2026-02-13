@@ -1,5 +1,6 @@
 /**
  * Pie / Donut Chart Widget — Recharts PieChart.
+ * Reads label/legend/display settings from unified WidgetStyleConfig keys.
  */
 import React, { useMemo } from "react";
 import {
@@ -16,47 +17,75 @@ import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle } from "
 
 const RADIAN = Math.PI / 180;
 
-/** Custom label renderer showing name + percentage + value */
-function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value, showPercentages, showLabels, showValues, labelFontSize, labelStyle }) {
-  const radius = outerRadius + 18;
+const SEPARATOR_MAP = {
+  newline: "\n",
+  comma: ", ",
+  space: " ",
+  dash: " — ",
+  pipe: " | ",
+  semicolon: "; ",
+};
+
+/**
+ * Custom label renderer that supports newline separator via <tspan>.
+ * Reads from unified WidgetStyleConfig keys.
+ */
+function renderPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value, style: _s, ...extra }) {
+  const s = extra.widgetStyle || {};
+  const labelStyle = extra.labelStyle || {};
+  const isInside = extra.isInside;
+
+  // Determine which parts to show from unified keys
+  const showCategory = s.labelShowCategory ?? (s.showLabels ?? true);    // fallback for legacy
+  const showValue    = s.labelShowValue    ?? (s.showValues ?? false);
+  const showPct      = s.labelShowPercentage ?? (s.showPercentages ?? false);
+
+  const parts = [];
+  if (showCategory && !isInside) parts.push(name);
+  if (showValue) parts.push(formatNumber(value, s));
+  if (showPct) parts.push(`${(percent * 100).toFixed(1)}%`);
+
+  if (parts.length === 0) return null;
+
+  const sep = SEPARATOR_MAP[s.labelSeparator || "newline"] || "\n";
+  const text = parts.join(sep);
+
+  const radius = isInside
+    ? innerRadius + (outerRadius - innerRadius) * 0.5
+    : outerRadius + 18;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-  const parts = [];
-  if (showLabels) parts.push(name);
-  if (showValues) parts.push(Number(value).toLocaleString());
-  if (showPercentages) parts.push(`${(percent * 100).toFixed(1)}%`);
+  // Don't show labels on tiny slices when inside
+  if (isInside && percent < 0.05) return null;
+
+  const fontSize  = labelStyle.fontSize || 11;
+  const fill      = isInside ? (labelStyle.fill || "#ffffff") : (labelStyle.fill || "#374151");
+  const fontWeight= isInside ? (labelStyle.fontWeight || "bold") : (labelStyle.fontWeight || "normal");
+  const anchor    = isInside ? "middle" : (x > cx ? "start" : "end");
+
+  // If separator is newline, render multiple <tspan>s
+  if (sep === "\n" && parts.length > 1) {
+    return (
+      <text x={x} y={y} fill={fill} textAnchor={anchor} dominantBaseline="central"
+        fontSize={fontSize} fontWeight={fontWeight}
+        fontStyle={labelStyle.fontStyle || "normal"}
+        fontFamily={labelStyle.fontFamily || undefined}>
+        {parts.map((line, i) => (
+          <tspan key={i} x={x} dy={i === 0 ? -(parts.length - 1) * fontSize * 0.5 : fontSize * 1.15}>
+            {line}
+          </tspan>
+        ))}
+      </text>
+    );
+  }
 
   return (
-    <text x={x} y={y} fill={labelStyle?.fill || "#374151"} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central"
-      fontSize={labelStyle?.fontSize || labelFontSize || 11}
-      fontWeight={labelStyle?.fontWeight || "normal"}
-      fontStyle={labelStyle?.fontStyle || "normal"}
-      fontFamily={labelStyle?.fontFamily || undefined}>
-      {parts.join(labelStyle?.separator || " · ")}
-    </text>
-  );
-}
-
-/** Inside label renderer */
-function renderInsideLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, showPercentages, showValues, labelFontSize, labelStyle }) {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  const parts = [];
-  if (showValues) parts.push(Number(value).toLocaleString());
-  if (showPercentages) parts.push(`${(percent * 100).toFixed(0)}%`);
-
-  if (percent < 0.05) return null; // Don't show label for tiny slices
-
-  return (
-    <text x={x} y={y} fill={labelStyle?.fill || "white"} textAnchor="middle" dominantBaseline="central"
-      fontSize={labelStyle?.fontSize || labelFontSize || 11}
-      fontWeight={labelStyle?.fontWeight || "bold"}
-      fontStyle={labelStyle?.fontStyle || "normal"}
-      fontFamily={labelStyle?.fontFamily || undefined}>
-      {parts.join(labelStyle?.separator || " ")}
+    <text x={x} y={y} fill={fill} textAnchor={anchor} dominantBaseline="central"
+      fontSize={fontSize} fontWeight={fontWeight}
+      fontStyle={labelStyle.fontStyle || "normal"}
+      fontFamily={labelStyle.fontFamily || undefined}>
+      {text}
     </text>
   );
 }
@@ -110,9 +139,15 @@ export default function PieChartWidget({ widget }) {
   const isDonut = style.chartType === "donut";
   const isRose = style.roseMode;
   const innerRadius = isDonut ? (style.donutThickness || 60) : (isRose ? 30 : 0);
-  const labelFontSize = { small: 9, medium: 11, large: 13, xlarge: 16 }[style.labelFontSize || "medium"] || 11;
   const paddingAngle = isRose ? 4 : (style.paddingAngle ?? 2);
-  const pieLabelStyle = { ...buildDataLabelStyle(style), separator: ({ newline: "\n", comma: ", ", space: " ", dash: " — ", pipe: " | ", semicolon: "; " })[style.labelSeparator] || " · " };
+  const pieLabelStyle = buildDataLabelStyle(style);
+
+  // Unified display keys from WidgetStyleConfig
+  const showCategory = style.labelShowCategory ?? (style.showLabels ?? true);
+  const showValue    = style.labelShowValue    ?? (style.showValues ?? false);
+  const showPct      = style.labelShowPercentage ?? (style.showPercentages ?? false);
+  const hasAnyLabel  = showCategory || showValue || showPct || style.showDataLabels;
+  const isInside     = (style.dataLabelPosition || style.labelPosition || "outside") === "inside";
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -129,16 +164,11 @@ export default function PieChartWidget({ widget }) {
           animationDuration={600}
           startAngle={style.startAngle ?? 0}
           endAngle={style.endAngle ?? 360}
-          label={
-            style.labelPosition === "inside"
-              ? (style.showValues || style.showPercentages)
-                ? (props) => renderInsideLabel({ ...props, showValues: style.showValues, showPercentages: style.showPercentages, labelFontSize, labelStyle: pieLabelStyle })
-                : undefined
-              : (style.showLabels || style.showPercentages || style.showValues)
-                ? (props) => renderCustomLabel({ ...props, showLabels: style.showLabels, showPercentages: style.showPercentages, showValues: style.showValues, labelFontSize, labelStyle: pieLabelStyle })
-                : undefined
+          label={hasAnyLabel
+            ? (props) => renderPieLabel({ ...props, widgetStyle: style, labelStyle: pieLabelStyle, isInside })
+            : undefined
           }
-          labelLine={style.showLeaderLines !== false && style.labelPosition !== "inside" && (style.showLabels || style.showPercentages || style.showValues)}
+          labelLine={style.showLeaderLines !== false && !isInside && hasAnyLabel}
         >
           {chartData.map((_, idx) => (
             <Cell key={idx} fill={getColor(idx, style.colorScheme)} />
@@ -150,8 +180,9 @@ export default function PieChartWidget({ widget }) {
         />
         {style.showLegend !== false && (
           <Legend
-            wrapperStyle={{ fontSize: labelFontSize - 1 }}
+            wrapperStyle={{ fontSize: (pieLabelStyle.fontSize || 11) - 1 }}
             verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
+            align={style.legendPosition === "left" ? "left" : style.legendPosition === "right" ? "right" : "center"}
             layout={style.legendLayout || "horizontal"}
           />
         )}

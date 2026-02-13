@@ -55,7 +55,7 @@ export default function ComboWidget({ widget }) {
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
         )}
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
-        {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} />}
+        {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />}
         <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600}>
           {style.showDataLabels && (
             <LabelList

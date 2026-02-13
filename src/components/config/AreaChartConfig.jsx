@@ -143,17 +143,6 @@ export default function AreaChartConfig({ widget }) {
           </div>
           <ColorPicker label="Axis Color" value={style.axisColor || "#6b7280"} onChange={(c) => updateStyle("axisColor", c)} />
           <ColorPicker label="Grid Color" value={style.gridColor || "#e5e7eb"} onChange={(c) => updateStyle("gridColor", c)} />
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Legend Position</label>
-            <div className="flex gap-2">
-              {["bottom", "top"].map((p) => (
-                <label key={p} className="flex items-center gap-1 text-xs">
-                  <input type="radio" name="legendPos" checked={(style.legendPosition || "bottom") === p} onChange={() => updateStyle("legendPosition", p)} />
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </label>
-              ))}
-            </div>
-          </div>
 
           {/* Widget Appearance */}
           <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />

@@ -361,6 +361,41 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
             ))}
           </div>
           <div className="space-y-2 pt-2 border-t border-gray-200">
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Legend</label>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Legend Position</label>
+              <div className="flex gap-1">
+                {["bottom", "top", "right", "left"].map((p) => (
+                  <button key={p}
+                    className={`flex-1 px-2 py-1 rounded text-[10px] transition-colors ${
+                      (style.legendPosition || "bottom") === p
+                        ? "bg-brand-100 text-brand-700 border border-brand-300 font-semibold"
+                        : "bg-white border border-gray-200 text-gray-500 hover:border-brand-300"
+                    }`}
+                    onClick={() => updateStyle("legendPosition", p)}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Legend Layout</label>
+              <div className="flex gap-1">
+                {["horizontal", "vertical"].map((l) => (
+                  <button key={l}
+                    className={`flex-1 px-2 py-1 rounded text-[10px] transition-colors ${
+                      (style.legendLayout || "horizontal") === l
+                        ? "bg-brand-100 text-brand-700 border border-brand-300 font-semibold"
+                        : "bg-white border border-gray-200 text-gray-500 hover:border-brand-300"
+                    }`}
+                    onClick={() => updateStyle("legendLayout", l)}>
+                    {l.charAt(0).toUpperCase() + l.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2 pt-2 border-t border-gray-200">
             <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Accent Border</label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input type="checkbox" checked={style.accentBorder || false}
@@ -392,7 +427,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
                 <div className="space-y-1">
                   {[
                     ["labelShowValue", "Value", true],
-                    ["labelShowCategory", "Category Name", false],
+                    ["labelShowCategory", "Category / Labels", false],
                     ["labelShowPercentage", "Percentage", false],
                     ["labelShowSeriesName", "Series Name", false],
                   ].map(([key, label, def]) => (

@@ -92,7 +92,7 @@ export default function AreaChartWidget({ widget }) {
         />
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && areaKeys.length > 1 && (
-          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} />
+          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
         )}
         {areaKeys.map((key, idx) => (
           <Area
