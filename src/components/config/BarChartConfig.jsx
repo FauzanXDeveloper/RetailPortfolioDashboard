@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
+import { getColor } from "../../utils/chartHelpers";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
 import { ConfigSection, ConfigSelect, AggregationPills, DataSourceInfo } from "./ConfigFieldComponents";
@@ -213,11 +214,50 @@ export default function BarChartConfig({ widget }) {
             </div>
           </div>
 
-          <ColorPicker
-            label="Bar Color"
-            value={style.barColor || "#4F46E5"}
-            onChange={(c) => updateStyle("barColor", c)}
-          />
+          {/* Series Colors */}
+          {(() => {
+            const allSeries = [config.yAxis, ...(config.additionalMeasures || [])].filter(Boolean);
+            const seriesColors = style.seriesColors || {};
+            if (allSeries.length <= 1 && !config.colorBy) {
+              return (
+                <ColorPicker
+                  label="Bar Color"
+                  value={style.barColor || "#4F46E5"}
+                  onChange={(c) => updateStyle("barColor", c)}
+                />
+              );
+            }
+            return (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Series Colors</label>
+                <p className="text-[10px] text-gray-400">Each measure/group gets its own color. Click to customize.</p>
+                {allSeries.map((key, idx) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={seriesColors[key] || getColor(idx)}
+                      onChange={(e) => {
+                        const next = { ...seriesColors, [key]: e.target.value };
+                        updateStyle("seriesColors", next);
+                      }}
+                      className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+                    />
+                    <span className="text-xs text-gray-600 truncate flex-1">{key}</span>
+                    {seriesColors[key] && (
+                      <button
+                        className="text-[10px] text-gray-400 hover:text-red-500"
+                        onClick={() => {
+                          const next = { ...seriesColors };
+                          delete next[key];
+                          updateStyle("seriesColors", next);
+                        }}
+                      >reset</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Font Size */}
           <div>

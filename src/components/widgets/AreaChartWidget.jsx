@@ -94,25 +94,29 @@ export default function AreaChartWidget({ widget }) {
         {style.showLegend !== false && areaKeys.length > 1 && (
           <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
         )}
-        {areaKeys.map((key, idx) => (
-          <Area
-            key={key}
-            type={curveType}
-            dataKey={key}
-            stroke={getColor(idx)}
-            fill={getColor(idx)}
-            fillOpacity={style.areaOpacity ?? 0.4}
-            strokeWidth={style.lineWidth || 2}
-            stackId={stackId}
-            dot={style.showDataPoints ? { r: style.dotSize || 3 } : false}
-            animationDuration={600}
-            label={style.showDataLabels ? {
-              position: style.dataLabelPosition || "top",
-              ...buildDataLabelStyle(style),
-              formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
-            } : false}
-          />
-        ))}
+        {areaKeys.map((key, idx) => {
+          const seriesColors = style.seriesColors || {};
+          const areaColor = seriesColors[key] || getColor(idx);
+          return (
+            <Area
+              key={key}
+              type={curveType}
+              dataKey={key}
+              stroke={areaColor}
+              fill={areaColor}
+              fillOpacity={style.areaOpacity ?? 0.4}
+              strokeWidth={style.lineWidth || 2}
+              stackId={stackId}
+              dot={style.showDataPoints ? { r: style.dotSize || 3 } : false}
+              animationDuration={600}
+              label={style.showDataLabels ? {
+                position: style.dataLabelPosition || "top",
+                ...buildDataLabelStyle(style),
+                formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
+              } : false}
+            />
+          );
+        })}
       </AreaChart>
     </ResponsiveContainer>
   );

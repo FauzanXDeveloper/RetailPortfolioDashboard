@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
+import { getColor } from "../../utils/chartHelpers";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
 import { ConfigSection, ConfigSelect, AggregationPills, DataSourceInfo } from "./ConfigFieldComponents";
@@ -145,6 +146,7 @@ export default function LineChartConfig({ widget }) {
               <option value="smooth">Smooth</option>
               <option value="straight">Straight</option>
               <option value="step">Stepped</option>
+              <option value="dashed">Dashed</option>
               <option value="sparkline">Sparkline (minimal)</option>
             </select>
           </div>
@@ -168,6 +170,44 @@ export default function LineChartConfig({ widget }) {
             <label className="block text-xs font-medium text-gray-600 mb-1">Dot Size: {style.dotSize || 3}</label>
             <input type="range" min={1} max={8} value={style.dotSize || 3} onChange={(e) => updateStyle("dotSize", Number(e.target.value))} className="w-full" />
           </div>
+
+          {/* Series Colors */}
+          {(() => {
+            const allSeries = [config.yAxis, ...(config.additionalLines || [])].filter(Boolean);
+            const seriesColors = style.seriesColors || {};
+            if (allSeries.length <= 1 && !config.groupBy) return null;
+            return (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-gray-600">Series Colors</label>
+                <p className="text-[10px] text-gray-400">Customize color for each line/series.</p>
+                {allSeries.map((key, idx) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={seriesColors[key] || getColor(idx)}
+                      onChange={(e) => {
+                        const next = { ...seriesColors, [key]: e.target.value };
+                        updateStyle("seriesColors", next);
+                      }}
+                      className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+                    />
+                    <span className="text-xs text-gray-600 truncate flex-1">{key}</span>
+                    {seriesColors[key] && (
+                      <button
+                        className="text-[10px] text-gray-400 hover:text-red-500"
+                        onClick={() => {
+                          const next = { ...seriesColors };
+                          delete next[key];
+                          updateStyle("seriesColors", next);
+                        }}
+                      >reset</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Font Size</label>
             <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.fontSize || "medium"} onChange={(e) => updateStyle("fontSize", e.target.value)}>

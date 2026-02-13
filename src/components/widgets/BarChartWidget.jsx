@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
   LabelList,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
@@ -184,31 +183,32 @@ export default function BarChartWidget({ widget }) {
             layout={style.legendLayout || "horizontal"}
           />
         )}
-        {barKeys.map((key, idx) => (
-          <Bar
-            key={key}
-            dataKey={key}
-            fill={isGrouped ? getColor(idx) : (style.barColor || "#1a3ab5")}
-            radius={style.barRadius != null ? [style.barRadius, style.barRadius, 0, 0] : [4, 4, 0, 0]}
-            animationDuration={600}
-            barSize={style.barWidth || undefined}
-            stackId={style.stacking ? "stack" : undefined}
-          >
-            {style.showDataLabels && (
-              <LabelList
-                dataKey={key}
-                position={style.dataLabelPosition || "top"}
-                style={buildDataLabelStyle(style)}
-                angle={style.dataLabelRotation || 0}
-                formatter={(v) => buildDataLabelContent({ value: v, seriesName: key, style })}
-              />
-            )}
-            {!isGrouped &&
-              displayData.map((_, i) => (
-                <Cell key={i} fill={style.barColor || "#1a3ab5"} />
-              ))}
-          </Bar>
-        ))}
+        {barKeys.map((key, idx) => {
+          // Use per-series custom color, else palette color, else single barColor for 1-series
+          const seriesColors = style.seriesColors || {};
+          const seriesColor = seriesColors[key] || (barKeys.length > 1 ? getColor(idx) : (style.barColor || "#1a3ab5"));
+          return (
+            <Bar
+              key={key}
+              dataKey={key}
+              fill={seriesColor}
+              radius={style.barRadius != null ? [style.barRadius, style.barRadius, 0, 0] : [4, 4, 0, 0]}
+              animationDuration={600}
+              barSize={style.barWidth || undefined}
+              stackId={style.stacking ? "stack" : undefined}
+            >
+              {style.showDataLabels && (
+                <LabelList
+                  dataKey={key}
+                  position={style.dataLabelPosition || "top"}
+                  style={buildDataLabelStyle(style)}
+                  angle={style.dataLabelRotation || 0}
+                  formatter={(v) => buildDataLabelContent({ value: v, seriesName: key, style })}
+                />
+              )}
+            </Bar>
+          );
+        })}
       </BarChart>
     </ResponsiveContainer>
   );

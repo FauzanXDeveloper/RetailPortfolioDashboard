@@ -2,8 +2,8 @@
  * FilterConfig — Reusable filter configuration section for widgets.
  * Allows adding/removing per-widget filters with smart value pickers.
  */
-import React from "react";
-import { Plus, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Trash2, Search } from "lucide-react";
 import useDashboardStore from "../../store/dashboardStore";
 import { getUniqueValues } from "../../utils/dataProcessing";
 
@@ -48,18 +48,19 @@ export default function FilterConfig({ widget, fields, colTypes, dataSource }) {
       return [
         { value: "equals", label: "Equals" },
         { value: "not_equals", label: "Not Equals" },
+        { value: "in", label: "Is One Of (Multi-Select)" },
         { value: "gt", label: "Greater Than" },
         { value: "lt", label: "Less Than" },
         { value: "gte", label: "≥ Greater or Equal" },
         { value: "lte", label: "≤ Less or Equal" },
         { value: "between", label: "Between" },
-        { value: "in", label: "Is One Of" },
       ];
     }
     if (fieldType === "date") {
       return [
         { value: "equals", label: "Equals" },
         { value: "not_equals", label: "Not Equals" },
+        { value: "in", label: "Is One Of (Multi-Select)" },
         { value: "between", label: "Between" },
         { value: "gt", label: "After" },
         { value: "lt", label: "Before" },
@@ -69,8 +70,8 @@ export default function FilterConfig({ widget, fields, colTypes, dataSource }) {
     return [
       { value: "equals", label: "Equals" },
       { value: "not_equals", label: "Not Equals" },
+      { value: "in", label: "Is One Of (Multi-Select)" },
       { value: "contains", label: "Contains" },
-      { value: "in", label: "Is One Of" },
     ];
   };
 
@@ -78,52 +79,14 @@ export default function FilterConfig({ widget, fields, colTypes, dataSource }) {
     const fieldType = colTypes[filter.field] || "text";
     const uniqueValues = dataSource ? getUniqueValues(dataSource.data, filter.field) : [];
 
-    // "In List" — multi-select checkbox picker
+    // "In List" — multi-select checkbox picker with search
     if (filter.condition === "in") {
       const selected = Array.isArray(filter.value) ? filter.value : [];
-      return (
-        <div className="space-y-1">
-          <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-1 space-y-0.5">
-            {uniqueValues.length > 0 ? (
-              <>
-                <label className="flex items-center gap-1.5 text-xs px-1 py-0.5 hover:bg-gray-50 rounded cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selected.length === uniqueValues.length}
-                    onChange={(e) => {
-                      updateFilter(idx, "value", e.target.checked ? uniqueValues.map(String) : []);
-                    }}
-                    className="rounded"
-                  />
-                  <span className="font-medium text-gray-500">Select All</span>
-                </label>
-                <hr className="border-gray-100" />
-                {uniqueValues.map((v) => (
-                  <label key={v} className="flex items-center gap-1.5 text-xs px-1 py-0.5 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(String(v))}
-                      onChange={(e) => {
-                        const next = e.target.checked
-                          ? [...selected, String(v)]
-                          : selected.filter((s) => s !== String(v));
-                        updateFilter(idx, "value", next);
-                      }}
-                      className="rounded"
-                    />
-                    {String(v)}
-                  </label>
-                ))}
-              </>
-            ) : (
-              <p className="text-xs text-gray-400 p-1">No values found</p>
-            )}
-          </div>
-          {selected.length > 0 && (
-            <p className="text-xs text-indigo-500">{selected.length} selected</p>
-          )}
-        </div>
-      );
+      return <MultiSelectPicker
+        values={uniqueValues}
+        selected={selected}
+        onChange={(next) => updateFilter(idx, "value", next)}
+      />;
     }
 
     // "Between" — two inputs
@@ -244,6 +207,99 @@ export default function FilterConfig({ widget, fields, colTypes, dataSource }) {
         <p className="text-xs text-gray-400 text-center py-2">
           No filters applied. Click "Add Filter" to add one.
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * MultiSelectPicker — Checkbox list with search, Select All, and count badge.
+ * Matches the UI pattern from the screenshot.
+ */
+function MultiSelectPicker({ values, selected, onChange }) {
+  const [search, setSearch] = useState("");
+  const filtered = values.filter((v) =>
+    String(v).toLowerCase().includes(search.toLowerCase())
+  );
+  const allFilteredSelected = filtered.length > 0 && filtered.every((v) => selected.includes(String(v)));
+
+  const toggleOne = (v) => {
+    const sv = String(v);
+    onChange(selected.includes(sv) ? selected.filter((s) => s !== sv) : [...selected, sv]);
+  };
+
+  const toggleAll = () => {
+    if (allFilteredSelected) {
+      // Deselect all filtered items
+      const filteredSet = new Set(filtered.map(String));
+      onChange(selected.filter((s) => !filteredSet.has(s)));
+    } else {
+      // Select all filtered items (merge with existing)
+      const existing = new Set(selected);
+      filtered.forEach((v) => existing.add(String(v)));
+      onChange([...existing]);
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      {/* Search box */}
+      <div className="relative">
+        <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          className="w-full text-xs border border-gray-200 rounded px-2 py-1 pl-6 outline-none focus:border-brand-400"
+          placeholder="Search values..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Checkbox list */}
+      <div className="max-h-40 overflow-y-auto border border-gray-200 rounded bg-white">
+        {filtered.length > 0 ? (
+          <>
+            {/* Select All */}
+            <label className="flex items-center gap-2 text-xs px-2 py-1.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 sticky top-0 bg-white z-10">
+              <input
+                type="checkbox"
+                checked={allFilteredSelected}
+                onChange={toggleAll}
+                className="rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+              />
+              <span className="font-semibold text-gray-600">Select All</span>
+              {search && <span className="text-[10px] text-gray-400 ml-auto">({filtered.length})</span>}
+            </label>
+            {filtered.map((v) => (
+              <label key={v} className="flex items-center gap-2 text-xs px-2 py-1 hover:bg-brand-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(String(v))}
+                  onChange={() => toggleOne(v)}
+                  className="rounded border-gray-300 text-brand-600 focus:ring-brand-400"
+                />
+                <span className="truncate">{String(v)}</span>
+              </label>
+            ))}
+          </>
+        ) : (
+          <p className="text-xs text-gray-400 p-2 text-center">No values found</p>
+        )}
+      </div>
+
+      {/* Count badge */}
+      {selected.length > 0 && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-brand-600 font-medium">
+            {selected.length} of {values.length} selected
+          </span>
+          <button
+            onClick={() => onChange([])}
+            className="text-[10px] text-red-500 hover:text-red-700 font-medium"
+          >
+            Clear
+          </button>
+        </div>
       )}
     </div>
   );

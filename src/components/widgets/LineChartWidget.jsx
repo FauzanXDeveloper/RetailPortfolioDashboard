@@ -72,6 +72,7 @@ export default function LineChartWidget({ widget }) {
   }
 
   const curveType = style.lineStyle === "straight" ? "linear" : style.lineStyle === "step" ? "stepAfter" : "monotone";
+  const isDashed = style.subtype === "dashed" || style.lineStyle === "dashed";
   const fontSizeMap = { small: 9, medium: 11, large: 13, xlarge: 16 };
   const fontSize = fontSizeMap[style.fontSize || "medium"] || 11;
   const labelAngle = style.xAxisLabelAngle || 0;
@@ -107,23 +108,27 @@ export default function LineChartWidget({ widget }) {
         {style.showLegend !== false && lineKeys.length > 1 && (
           <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
         )}
-        {lineKeys.map((key, idx) => (
-          <Line
-            key={key}
-            type={curveType}
-            dataKey={key}
-            stroke={getColor(idx)}
-            strokeWidth={style.lineWidth || 2}
-            dot={style.showDataPoints !== false ? { r: style.dotSize || 3, fill: getColor(idx) } : false}
-            strokeDasharray={style.lineDashArray || undefined}
-            animationDuration={600}
-            label={style.showDataLabels ? {
-              position: style.dataLabelPosition || "top",
-              ...buildDataLabelStyle(style),
-              formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
-            } : false}
-          />
-        ))}
+        {lineKeys.map((key, idx) => {
+          const seriesColors = style.seriesColors || {};
+          const lineColor = seriesColors[key] || getColor(idx);
+          return (
+            <Line
+              key={key}
+              type={curveType}
+              dataKey={key}
+              stroke={lineColor}
+              strokeWidth={style.lineWidth || 2}
+              dot={style.showDataPoints !== false ? { r: style.dotSize || 3, fill: lineColor } : false}
+              strokeDasharray={isDashed ? "8 4" : (style.lineDashArray || undefined)}
+              animationDuration={600}
+              label={style.showDataLabels ? {
+                position: style.dataLabelPosition || "top",
+                ...buildDataLabelStyle(style),
+                formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
+              } : false}
+            />
+          );
+        })}
       </LineChart>
     </ResponsiveContainer>
   );
