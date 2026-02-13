@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/RetailPortfolioDashboard/static/css/main.a57594e0.css",
-    "main.js": "/RetailPortfolioDashboard/static/js/main.ff1939b4.js",
+    "main.js": "/RetailPortfolioDashboard/static/js/main.21295c20.js",
     "static/js/238.18f00144.chunk.js": "/RetailPortfolioDashboard/static/js/238.18f00144.chunk.js",
     "static/js/977.66e90588.chunk.js": "/RetailPortfolioDashboard/static/js/977.66e90588.chunk.js",
     "static/js/455.73f88bb1.chunk.js": "/RetailPortfolioDashboard/static/js/455.73f88bb1.chunk.js",
     "static/js/453.707080e5.chunk.js": "/RetailPortfolioDashboard/static/js/453.707080e5.chunk.js",
     "index.html": "/RetailPortfolioDashboard/index.html",
     "main.a57594e0.css.map": "/RetailPortfolioDashboard/static/css/main.a57594e0.css.map",
-    "main.ff1939b4.js.map": "/RetailPortfolioDashboard/static/js/main.ff1939b4.js.map",
+    "main.21295c20.js.map": "/RetailPortfolioDashboard/static/js/main.21295c20.js.map",
     "238.18f00144.chunk.js.map": "/RetailPortfolioDashboard/static/js/238.18f00144.chunk.js.map",
     "977.66e90588.chunk.js.map": "/RetailPortfolioDashboard/static/js/977.66e90588.chunk.js.map",
     "455.73f88bb1.chunk.js.map": "/RetailPortfolioDashboard/static/js/455.73f88bb1.chunk.js.map",
@@ -16,6 +16,6 @@
   },
   "entrypoints": [
     "static/css/main.a57594e0.css",
-    "static/js/main.ff1939b4.js"
+    "static/js/main.21295c20.js"
   ]
 }
