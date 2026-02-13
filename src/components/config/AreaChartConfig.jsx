@@ -30,7 +30,7 @@ export default function AreaChartConfig({ widget }) {
     <div>
       <div className="flex border-b border-gray-200 mb-3">
         {["data", "filters", "style"].map((t) => (
-          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500"}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
 

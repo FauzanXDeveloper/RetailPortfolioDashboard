@@ -3,6 +3,7 @@
  */
 import React from "react";
 import useDashboardStore from "../../store/dashboardStore";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function TextBoxConfig({ widget }) {
   const { updateWidgetConfig } = useDashboardStore();
@@ -12,6 +13,8 @@ export default function TextBoxConfig({ widget }) {
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) =>
     updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) =>
+    updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   return (
     <div className="space-y-3">
@@ -64,6 +67,8 @@ export default function TextBoxConfig({ widget }) {
         />
         Show Border
       </label>
+
+      <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
     </div>
   );
 }

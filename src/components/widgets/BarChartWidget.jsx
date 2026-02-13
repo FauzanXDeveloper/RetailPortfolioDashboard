@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, sortData, applyGlobalFilters, limitData, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
 
 export default function BarChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -197,12 +197,9 @@ export default function BarChartWidget({ widget }) {
               <LabelList
                 dataKey={key}
                 position={style.dataLabelPosition || "top"}
-                style={{
-                  fontSize: style.dataLabelSize || 10,
-                  fill: style.dataLabelColor || "#374151",
-                  fontWeight: style.dataLabelBold ? "bold" : "normal",
-                }}
-                formatter={(v) => formatNumber(v, style)}
+                style={buildDataLabelStyle(style)}
+                angle={style.dataLabelRotation || 0}
+                formatter={(v) => buildDataLabelContent({ value: v, seriesName: key, style })}
               />
             )}
             {!isGrouped &&

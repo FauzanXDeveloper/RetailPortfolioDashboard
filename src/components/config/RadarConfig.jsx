@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import FilterConfig from "./FilterConfig";
+import WidgetStyleConfig from "./WidgetStyleConfig";
 
 export default function RadarConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -19,6 +20,7 @@ export default function RadarConfig({ widget }) {
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) => updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
+  const updateStyleBatch = (updates) => updateWidgetConfig(widget.i, { style: { ...style, ...updates } });
 
   const toggleMeasure = (field) => {
     const measures = config.measures || [];
@@ -33,7 +35,7 @@ export default function RadarConfig({ widget }) {
     <div>
       <div className="flex border-b border-gray-200 mb-3">
         {["data", "filters", "style"].map((t) => (
-          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-indigo-500 text-indigo-600" : "text-gray-500"}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
 
@@ -89,6 +91,7 @@ export default function RadarConfig({ widget }) {
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={style.showLegend !== false} onChange={(e) => updateStyle("showLegend", e.target.checked)} /> Show Legend
           </label>
+          <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}
     </div>

@@ -98,6 +98,87 @@ export function buildTooltipStyle(style = {}) {
 }
 
 /**
+ * Font family map for data labels.
+ */
+const LABEL_FONT_MAP = {
+  default: "system-ui, -apple-system, sans-serif",
+  serif: "Georgia, 'Times New Roman', serif",
+  mono: "'SF Mono', 'Fira Code', monospace",
+  condensed: "'Arial Narrow', 'Roboto Condensed', sans-serif",
+};
+
+/**
+ * Separator map for data label parts.
+ */
+const SEPARATOR_MAP = {
+  newline: "\n",
+  comma: ", ",
+  space: " ",
+  dash: " — ",
+  pipe: " | ",
+  semicolon: "; ",
+};
+
+/**
+ * Build data label style object from widget style config.
+ * Used by all chart widgets for consistent label styling.
+ */
+export function buildDataLabelStyle(style = {}) {
+  return {
+    fontSize: style.dataLabelSize || 10,
+    fill: style.dataLabelColor || "#374151",
+    fontWeight: style.dataLabelBold ? "bold" : "normal",
+    fontStyle: style.dataLabelItalic ? "italic" : "normal",
+    fontFamily: LABEL_FONT_MAP[style.dataLabelFont || "default"],
+  };
+}
+
+/**
+ * Build data label content string for a chart data point.
+ * Supports value, category, percentage, series name with configurable separator.
+ *
+ * @param {object} params
+ * @param {number} params.value - The data value
+ * @param {string} params.category - Category/dimension name
+ * @param {number} params.percent - Percentage (0-100)
+ * @param {string} params.seriesName - Series/measure name
+ * @param {object} params.style - Widget style config
+ * @returns {string} Formatted label text
+ */
+export function buildDataLabelContent({ value, category, percent, seriesName, style = {} }) {
+  const parts = [];
+  const sep = SEPARATOR_MAP[style.labelSeparator || "newline"] || "\n";
+
+  // Default: show value if no explicit selection
+  const showValue = style.labelShowValue !== undefined ? style.labelShowValue : true;
+  const showCategory = style.labelShowCategory || false;
+  const showPercentage = style.labelShowPercentage || false;
+  const showSeriesName = style.labelShowSeriesName || false;
+
+  if (showSeriesName && seriesName) parts.push(seriesName);
+  if (showCategory && category) parts.push(category);
+  if (showValue && value != null) parts.push(formatNumber(value, style));
+  if (showPercentage && percent != null) parts.push(percent.toFixed(1) + "%");
+
+  return parts.length > 0 ? parts.join(sep) : formatNumber(value, style);
+}
+
+/**
+ * Build LabelList props for Recharts Bar/Line/Area charts.
+ * Returns null if labels are disabled.
+ */
+export function buildLabelListProps(style = {}, dataKey) {
+  if (!style.showDataLabels) return null;
+  return {
+    dataKey,
+    position: style.dataLabelPosition || "top",
+    style: buildDataLabelStyle(style),
+    angle: style.dataLabelRotation || 0,
+    formatter: (v) => buildDataLabelContent({ value: v, style }),
+  };
+}
+
+/**
  * Build default widget config for each widget type.
  */
 export function getDefaultWidgetConfig(type) {

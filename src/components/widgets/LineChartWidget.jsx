@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
 
 export default function LineChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -119,9 +119,8 @@ export default function LineChartWidget({ widget }) {
             animationDuration={600}
             label={style.showDataLabels ? {
               position: style.dataLabelPosition || "top",
-              fontSize: style.dataLabelSize || 10,
-              fill: style.dataLabelColor || "#374151",
-              formatter: (v) => formatNumber(v, style),
+              ...buildDataLabelStyle(style),
+              formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
             } : false}
           />
         ))}

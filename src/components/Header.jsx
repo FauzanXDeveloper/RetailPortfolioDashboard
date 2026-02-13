@@ -19,10 +19,14 @@ import {
   LogOut,
   Trash2,
   Share2,
+  Cloud,
+  Copy,
+  Check,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
 import { importDashboard } from "../utils/storage";
 import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
+import { uploadToCloud, buildShareString } from "../utils/cloudShare";
 import GlobalFilterManager from "./modals/GlobalFilterManager";
 
 export default function Header() {
@@ -46,6 +50,10 @@ export default function Header() {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showDeleteEnvConfirm, setShowDeleteEnvConfirm] = useState(false);
+  const [showCloudShareModal, setShowCloudShareModal] = useState(false);
+  const [cloudShareLoading, setCloudShareLoading] = useState(false);
+  const [cloudShareResult, setCloudShareResult] = useState(null);
+  const [cloudShareCopied, setCloudShareCopied] = useState(false);
 
   const [showLoadDropdown, setShowLoadDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -125,6 +133,39 @@ export default function Header() {
     URL.revokeObjectURL(url);
   };
 
+  /** Upload environment to cloud (GitHub Gist) with encryption */
+  const handleCloudShare = async () => {
+    setCloudShareLoading(true);
+    setCloudShareResult(null);
+    setCloudShareCopied(false);
+    try {
+      const state = useDashboardStore.getState();
+      const envData = {
+        _type: "analytics-env-share",
+        id: state.environmentId,
+        name: state.environmentName || state.environmentId,
+        dashboards: state.dashboards,
+        dataSources: state.dataSources.filter((d) => d.type !== "builtin"),
+        exportedAt: new Date().toISOString(),
+      };
+      const result = await uploadToCloud(envData);
+      const fullCode = buildShareString(result.shareCode, result.gistId);
+      setCloudShareResult({ ...result, fullCode });
+    } catch (err) {
+      alert("Cloud share failed: " + err.message);
+    } finally {
+      setCloudShareLoading(false);
+    }
+  };
+
+  const handleCopyShareCode = () => {
+    if (cloudShareResult?.fullCode) {
+      navigator.clipboard.writeText(cloudShareResult.fullCode);
+      setCloudShareCopied(true);
+      setTimeout(() => setCloudShareCopied(false), 2000);
+    }
+  };
+
   const gf = currentDashboard.globalFilters || {};
   const dynamicFilters = gf.dynamic || [];
 
@@ -155,7 +196,14 @@ export default function Header() {
           className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-white/80 transition-colors"
           title="Share environment (export as file for other devices)"
         >
-          <Share2 size={12} /> Share
+          <Share2 size={12} /> Share File
+        </button>
+        <button
+          onClick={() => { setShowCloudShareModal(true); setCloudShareResult(null); }}
+          className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg text-emerald-200 transition-colors"
+          title="Share environment via cloud (cross-device)"
+        >
+          <Cloud size={12} /> Cloud Share
         </button>
       </div>
 
@@ -180,6 +228,91 @@ export default function Header() {
                 onClick={() => setShowDeleteEnvConfirm(false)}
               >Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Share Modal */}
+      {showCloudShareModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-96 animate-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Cloud size={18} className="text-emerald-500" />
+                <h3 className="text-sm font-bold text-gray-800">Cloud Share</h3>
+              </div>
+              <button onClick={() => setShowCloudShareModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={16} />
+              </button>
+            </div>
+
+            {!cloudShareResult ? (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-600">
+                  Upload your environment to the cloud. Anyone with the share code and password can access it on any device.
+                </p>
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-[10px] font-medium text-amber-800">🔒 Password Protected</p>
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    Data is encrypted with AES-256. Recipients need the password to decrypt.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloudShare}
+                  disabled={cloudShareLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                >
+                  {cloudShareLoading ? (
+                    <>
+                      <span className="animate-spin">⏳</span> Uploading & Encrypting...
+                    </>
+                  ) : (
+                    <>
+                      <Cloud size={14} /> Upload to Cloud
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-emerald-600 mb-2">
+                  <Check size={16} />
+                  <span className="text-sm font-medium">Successfully shared!</span>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 mb-1 uppercase tracking-wide">Share Code</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      readOnly
+                      value={cloudShareResult.fullCode}
+                      className="flex-1 text-xs font-mono bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 select-all"
+                      onClick={(e) => e.target.select()}
+                    />
+                    <button
+                      onClick={handleCopyShareCode}
+                      className="flex items-center gap-1 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-medium transition-colors"
+                    >
+                      {cloudShareCopied ? <Check size={12} /> : <Copy size={12} />}
+                      {cloudShareCopied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-1">
+                  <p className="text-[10px] text-gray-500">
+                    <strong>📋 Share this code</strong> with others. They can paste it on the landing page to load your environment.
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    <strong>🔑 Password:</strong> Required to decrypt. Share it separately for security.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCloudShareModal(false)}
+                  className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs font-medium transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

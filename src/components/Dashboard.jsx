@@ -13,8 +13,9 @@ import Canvas from "./Canvas";
 import ConfigPanel from "./ConfigPanel";
 import DataManager from "./modals/DataManager";
 import useDashboardStore from "../store/dashboardStore";
-import { LogIn, Plus, X, CheckCircle, Upload } from "lucide-react";
+import { LogIn, Plus, X, CheckCircle, Upload, Cloud, KeyRound } from "lucide-react";
 import { saveEnvironment } from "../utils/environmentDB";
+import { downloadFromCloud } from "../utils/cloudShare";
 
 const AUTO_SAVE_KEY = "analytics-dashboard-autosave";
 
@@ -30,6 +31,11 @@ export default function Dashboard() {
   const [landingStep, setLandingStep] = useState("idle");
   const [foundEnv, setFoundEnv] = useState(null); // env object when found
   const [createEnvName, setCreateEnvName] = useState(""); // display name for new env
+  const [showCloudImport, setShowCloudImport] = useState(false);
+  const [cloudCode, setCloudCode] = useState("");
+  const [cloudPassword, setCloudPassword] = useState("");
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudError, setCloudError] = useState("");
 
   // Restore auto-saved dashboard on mount
   useEffect(() => {
@@ -160,6 +166,36 @@ export default function Dashboard() {
     input.click();
   };
 
+  /** Import environment from cloud using share code + password */
+  const handleCloudImport = async () => {
+    setCloudLoading(true);
+    setCloudError("");
+    try {
+      const data = await downloadFromCloud(cloudCode.trim(), cloudPassword.trim());
+      if (!data || !data.id) {
+        throw new Error("Invalid environment data received from cloud.");
+      }
+      // Save to local IDB
+      const env = {
+        id: data.id,
+        name: data.name || data.id,
+        dashboards: data.dashboards || [],
+        dataSources: data.dataSources || [],
+        createdAt: data.exportedAt || new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      };
+      await saveEnvironment(env);
+      await enterEnvironment(data.id);
+      setShowCloudImport(false);
+      setCloudCode("");
+      setCloudPassword("");
+    } catch (err) {
+      setCloudError(err.message);
+    } finally {
+      setCloudLoading(false);
+    }
+  };
+
   // If no environment is active, show landing screen
   if (!environmentId) {
     return (
@@ -197,17 +233,81 @@ export default function Dashboard() {
             Your data and analyses are stored securely in your browser.<br />
             Share the environment code with coworkers so they can view your work.
           </p>
-          <div className="mt-3">
-            <button
-              onClick={handleImportEnv}
-              className="flex items-center gap-1.5 mx-auto px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-sm font-medium transition-colors"
-            >
-              <Upload size={14} /> Import Shared Environment
-            </button>
-            <p className="text-[11px] text-white/30 mt-1">
-              Have a shared environment file? Import it here to access it on this device.
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={handleImportEnv}
+                className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Upload size={14} /> Import File
+              </button>
+              <button
+                onClick={() => { setShowCloudImport(true); setCloudError(""); }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Cloud size={14} /> Import from Cloud
+              </button>
+            </div>
+            <p className="text-[11px] text-white/30">
+              Import from a file or use a cloud share code to load an environment.
             </p>
           </div>
+
+          {/* Cloud Import Modal */}
+          {showCloudImport && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+              <div className="bg-white rounded-xl shadow-2xl p-6 w-96 animate-in">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Cloud size={18} className="text-emerald-500" />
+                    <h3 className="text-sm font-bold text-gray-800">Import from Cloud</h3>
+                  </div>
+                  <button onClick={() => setShowCloudImport(false)} className="text-gray-400 hover:text-gray-600">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Share Code</label>
+                    <input
+                      className="w-full text-xs font-mono border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30"
+                      placeholder="e.g. ABCD1234-gist-id..."
+                      value={cloudCode}
+                      onChange={(e) => setCloudCode(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      <KeyRound size={12} className="inline mr-1" />Password
+                    </label>
+                    <input
+                      type="password"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30"
+                      placeholder="Enter decryption password"
+                      value={cloudPassword}
+                      onChange={(e) => setCloudPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && cloudCode.trim() && cloudPassword.trim() && !cloudLoading && handleCloudImport()}
+                    />
+                  </div>
+                  {cloudError && (
+                    <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{cloudError}</p>
+                  )}
+                  <button
+                    onClick={handleCloudImport}
+                    disabled={cloudLoading || !cloudCode.trim() || !cloudPassword.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                  >
+                    {cloudLoading ? (
+                      <><span className="animate-spin">⏳</span> Downloading & Decrypting...</>
+                    ) : (
+                      <><Cloud size={14} /> Load Environment</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Popup: Environment exists — confirm */}

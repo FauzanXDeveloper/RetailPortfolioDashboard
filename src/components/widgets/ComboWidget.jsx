@@ -4,11 +4,11 @@
 import React, { useMemo } from "react";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  Tooltip, Legend, ResponsiveContainer, LabelList,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
 
 export default function ComboWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -48,15 +48,25 @@ export default function ComboWidget({ widget }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
-        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
+        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke={style.gridColor || "#e5e7eb"} />}
         <XAxis dataKey={config.xAxis} tick={{ fontSize: 11 }} />
-        <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+        <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
         {config.lineMeasure && config.lineMeasure !== config.barMeasure && (
-          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
         )}
-        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => Number(v).toLocaleString()} />
+        <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} />}
-        <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600} />
+        <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600}>
+          {style.showDataLabels && (
+            <LabelList
+              dataKey={config.barMeasure}
+              position={style.dataLabelPosition || "top"}
+              style={buildDataLabelStyle(style)}
+              angle={style.dataLabelRotation || 0}
+              formatter={(v) => buildDataLabelContent({ value: v, seriesName: config.barMeasure, style })}
+            />
+          )}
+        </Bar>
         {config.lineMeasure && (
           <Line
             yAxisId={config.lineMeasure !== config.barMeasure ? "right" : "left"}
@@ -66,6 +76,11 @@ export default function ComboWidget({ widget }) {
             strokeWidth={2}
             dot={{ r: 3 }}
             animationDuration={600}
+            label={style.showDataLabels ? {
+              position: style.dataLabelPosition || "top",
+              ...buildDataLabelStyle(style),
+              formatter: (v) => buildDataLabelContent({ value: v, seriesName: config.lineMeasure, style }),
+            } : false}
           />
         )}
       </ComposedChart>

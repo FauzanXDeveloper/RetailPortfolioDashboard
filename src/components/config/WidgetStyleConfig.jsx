@@ -73,6 +73,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
     { key: "appearance", label: "🎨 Look" },
     { key: "shadow", label: "🌓 Shadow" },
     { key: "title", label: "✏️ Title" },
+    { key: "labels", label: "🏷️ Labels" },
     { key: "margins", label: "📐 Margins" },
     { key: "tooltip", label: "💬 Tooltip" },
     { key: "number", label: "#️⃣ Number" },
@@ -302,6 +303,154 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
           </div>
           <ColorPicker label="Subtitle Color" value={style.subtitleColor || "#9ca3af"}
             onChange={(c) => updateStyle("subtitleColor", c)} />
+        </div>
+      )}
+
+      {/* ── DATA LABELS ── */}
+      {section === "labels" && (
+        <div className="space-y-3">
+          <p className="text-[10px] text-gray-400">Configure data labels shown on chart elements.</p>
+          <label className="flex items-center gap-2 text-xs font-medium">
+            <input type="checkbox" checked={style.showDataLabels || false}
+              onChange={(e) => updateStyle("showDataLabels", e.target.checked)} />
+            Show Data Labels
+          </label>
+          {style.showDataLabels && (
+            <div className="space-y-2 pl-1 border-l-2 border-brand-200">
+              {/* Label Content */}
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 mb-1 uppercase tracking-wide">Label Contains</label>
+                <div className="space-y-1">
+                  {[
+                    ["labelShowValue", "Value", true],
+                    ["labelShowCategory", "Category Name", false],
+                    ["labelShowPercentage", "Percentage", false],
+                    ["labelShowSeriesName", "Series Name", false],
+                  ].map(([key, label, def]) => (
+                    <label key={key} className="flex items-center gap-2 text-xs">
+                      <input type="checkbox" checked={style[key] !== undefined ? style[key] : def}
+                        onChange={(e) => updateStyle(key, e.target.checked)} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Separator</label>
+                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+                  value={style.labelSeparator || "newline"}
+                  onChange={(e) => updateStyle("labelSeparator", e.target.value)}>
+                  <option value="newline">New Line ↵</option>
+                  <option value="comma">Comma (,)</option>
+                  <option value="space">Space</option>
+                  <option value="dash">Dash (—)</option>
+                  <option value="pipe">Pipe (|)</option>
+                  <option value="semicolon">Semicolon (;)</option>
+                </select>
+              </div>
+
+              {/* Position */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Position</label>
+                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+                  value={style.dataLabelPosition || "top"}
+                  onChange={(e) => updateStyle("dataLabelPosition", e.target.value)}>
+                  <option value="top">Top</option>
+                  <option value="center">Center</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="insideTop">Inside Top</option>
+                  <option value="insideBottom">Inside Bottom</option>
+                  <option value="inside">Inside</option>
+                  <option value="outside">Outside</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+
+              {/* Font Size */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Font Size: {style.dataLabelSize || 10}px
+                </label>
+                <input type="range" min={7} max={18} value={style.dataLabelSize || 10}
+                  onChange={(e) => updateStyle("dataLabelSize", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+
+              {/* Text Color */}
+              <ColorPicker label="Text Color" value={style.dataLabelColor || "#374151"}
+                onChange={(c) => updateStyle("dataLabelColor", c)} />
+
+              {/* Font Style */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Font Style</label>
+                <div className="flex gap-2">
+                  <label className="flex items-center gap-1 text-xs">
+                    <input type="checkbox" checked={style.dataLabelBold || false}
+                      onChange={(e) => updateStyle("dataLabelBold", e.target.checked)} />
+                    <span className="font-bold">B</span>
+                  </label>
+                  <label className="flex items-center gap-1 text-xs">
+                    <input type="checkbox" checked={style.dataLabelItalic || false}
+                      onChange={(e) => updateStyle("dataLabelItalic", e.target.checked)} />
+                    <span className="italic">I</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Font Family */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Font Family</label>
+                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
+                  value={style.dataLabelFont || "default"}
+                  onChange={(e) => updateStyle("dataLabelFont", e.target.value)}>
+                  <option value="default">Default (Inter/System)</option>
+                  <option value="serif">Serif (Georgia)</option>
+                  <option value="mono">Monospace</option>
+                  <option value="condensed">Condensed</option>
+                </select>
+              </div>
+
+              {/* Label Background */}
+              <div className="space-y-1">
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={style.dataLabelBackground || false}
+                    onChange={(e) => updateStyle("dataLabelBackground", e.target.checked)} />
+                  Label Background
+                </label>
+                {style.dataLabelBackground && (
+                  <div className="pl-4 space-y-1">
+                    <ColorPicker label="Background Color" value={style.dataLabelBgColor || "#ffffff"}
+                      onChange={(c) => updateStyle("dataLabelBgColor", c)} />
+                    <div>
+                      <label className="block text-[10px] text-gray-500 mb-0.5">
+                        Opacity: {Math.round((style.dataLabelBgOpacity ?? 0.85) * 100)}%
+                      </label>
+                      <input type="range" min={0} max={100} value={Math.round((style.dataLabelBgOpacity ?? 0.85) * 100)}
+                        onChange={(e) => updateStyle("dataLabelBgOpacity", Number(e.target.value) / 100)} className="w-full accent-brand-600" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Rotation */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Rotation: {style.dataLabelRotation || 0}°
+                </label>
+                <input type="range" min={-90} max={90} step={15} value={style.dataLabelRotation || 0}
+                  onChange={(e) => updateStyle("dataLabelRotation", Number(e.target.value))} className="w-full accent-brand-600" />
+              </div>
+
+              {/* Leader Lines (for pie) */}
+              <label className="flex items-center gap-2 text-xs">
+                <input type="checkbox" checked={style.showLeaderLines !== false}
+                  onChange={(e) => updateStyle("showLeaderLines", e.target.checked)} />
+                Leader Lines (Pie/Donut)
+              </label>
+            </div>
+          )}
         </div>
       )}
 

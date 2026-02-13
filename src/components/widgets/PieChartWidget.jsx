@@ -12,12 +12,12 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle } from "../../utils/chartHelpers";
 
 const RADIAN = Math.PI / 180;
 
 /** Custom label renderer showing name + percentage + value */
-function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value, showPercentages, showLabels, showValues, labelFontSize }) {
+function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value, showPercentages, showLabels, showValues, labelFontSize, labelStyle }) {
   const radius = outerRadius + 18;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -28,14 +28,18 @@ function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
   if (showPercentages) parts.push(`${(percent * 100).toFixed(1)}%`);
 
   return (
-    <text x={x} y={y} fill="#374151" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={labelFontSize || 11}>
-      {parts.join(" · ")}
+    <text x={x} y={y} fill={labelStyle?.fill || "#374151"} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central"
+      fontSize={labelStyle?.fontSize || labelFontSize || 11}
+      fontWeight={labelStyle?.fontWeight || "normal"}
+      fontStyle={labelStyle?.fontStyle || "normal"}
+      fontFamily={labelStyle?.fontFamily || undefined}>
+      {parts.join(labelStyle?.separator || " · ")}
     </text>
   );
 }
 
 /** Inside label renderer */
-function renderInsideLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, showPercentages, showValues, labelFontSize }) {
+function renderInsideLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, showPercentages, showValues, labelFontSize, labelStyle }) {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -47,8 +51,12 @@ function renderInsideLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent
   if (percent < 0.05) return null; // Don't show label for tiny slices
 
   return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={labelFontSize || 11} fontWeight="bold">
-      {parts.join(" ")}
+    <text x={x} y={y} fill={labelStyle?.fill || "white"} textAnchor="middle" dominantBaseline="central"
+      fontSize={labelStyle?.fontSize || labelFontSize || 11}
+      fontWeight={labelStyle?.fontWeight || "bold"}
+      fontStyle={labelStyle?.fontStyle || "normal"}
+      fontFamily={labelStyle?.fontFamily || undefined}>
+      {parts.join(labelStyle?.separator || " ")}
     </text>
   );
 }
@@ -104,6 +112,7 @@ export default function PieChartWidget({ widget }) {
   const innerRadius = isDonut ? (style.donutThickness || 60) : (isRose ? 30 : 0);
   const labelFontSize = { small: 9, medium: 11, large: 13, xlarge: 16 }[style.labelFontSize || "medium"] || 11;
   const paddingAngle = isRose ? 4 : (style.paddingAngle ?? 2);
+  const pieLabelStyle = { ...buildDataLabelStyle(style), separator: ({ newline: "\n", comma: ", ", space: " ", dash: " — ", pipe: " | ", semicolon: "; " })[style.labelSeparator] || " · " };
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -123,13 +132,13 @@ export default function PieChartWidget({ widget }) {
           label={
             style.labelPosition === "inside"
               ? (style.showValues || style.showPercentages)
-                ? (props) => renderInsideLabel({ ...props, showValues: style.showValues, showPercentages: style.showPercentages, labelFontSize })
+                ? (props) => renderInsideLabel({ ...props, showValues: style.showValues, showPercentages: style.showPercentages, labelFontSize, labelStyle: pieLabelStyle })
                 : undefined
               : (style.showLabels || style.showPercentages || style.showValues)
-                ? (props) => renderCustomLabel({ ...props, showLabels: style.showLabels, showPercentages: style.showPercentages, showValues: style.showValues, labelFontSize })
+                ? (props) => renderCustomLabel({ ...props, showLabels: style.showLabels, showPercentages: style.showPercentages, showValues: style.showValues, labelFontSize, labelStyle: pieLabelStyle })
                 : undefined
           }
-          labelLine={style.labelPosition !== "inside" && (style.showLabels || style.showPercentages || style.showValues)}
+          labelLine={style.showLeaderLines !== false && style.labelPosition !== "inside" && (style.showLabels || style.showPercentages || style.showValues)}
         >
           {chartData.map((_, idx) => (
             <Cell key={idx} fill={getColor(idx, style.colorScheme)} />
