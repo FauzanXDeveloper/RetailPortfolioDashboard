@@ -203,7 +203,37 @@ export default function BarChartWidget({ widget }) {
                   position={style.dataLabelPosition || "top"}
                   style={buildDataLabelStyle(style)}
                   angle={style.dataLabelRotation || 0}
-                  formatter={(v) => buildDataLabelContent({ value: v, seriesName: key, style })}
+                  formatter={(v, name, props) => {
+                    let percent = null;
+                    
+                    // Calculate percentage based on chart type
+                    if (style.labelShowPercentage && displayData && v != null) {
+                      if (style.stacking) {
+                        // Stacked chart: percentage of stack total for this category
+                        const rowData = displayData.find(row => row[config.xAxis] === props.payload[config.xAxis]);
+                        if (rowData) {
+                          const stackTotal = barKeys.reduce((sum, k) => sum + (Number(rowData[k]) || 0), 0);
+                          if (stackTotal > 0) {
+                            percent = (v / stackTotal) * 100;
+                          }
+                        }
+                      } else {
+                        // Single/grouped chart: percentage of total for this series across all categories
+                        const seriesTotal = displayData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+                        if (seriesTotal > 0) {
+                          percent = (v / seriesTotal) * 100;
+                        }
+                      }
+                    }
+                    
+                    return buildDataLabelContent({ 
+                      value: v, 
+                      seriesName: key, 
+                      category: props.payload[config.xAxis],
+                      percent, 
+                      style 
+                    });
+                  }}
                 />
               )}
             </Bar>

@@ -112,7 +112,37 @@ export default function AreaChartWidget({ widget }) {
               label={style.showDataLabels ? {
                 position: style.dataLabelPosition || "top",
                 ...buildDataLabelStyle(style),
-                formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
+                formatter: (v, name, props) => {
+                  let percent = null;
+                  
+                  // Calculate percentage for area charts
+                  if (style.labelShowPercentage && chartData && v != null) {
+                    if (stackId) {
+                      // Stacked area chart: percentage of stack total for this category
+                      const rowData = chartData.find(row => row[config.xAxis] === props?.payload?.[config.xAxis]);
+                      if (rowData) {
+                        const stackTotal = areaKeys.reduce((sum, k) => sum + (Number(rowData[k]) || 0), 0);
+                        if (stackTotal > 0) {
+                          percent = (v / stackTotal) * 100;
+                        }
+                      }
+                    } else {
+                      // Non-stacked area chart: percentage of total for this series across all data points
+                      const seriesTotal = chartData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+                      if (seriesTotal > 0) {
+                        percent = (v / seriesTotal) * 100;
+                      }
+                    }
+                  }
+                  
+                  return buildDataLabelContent({ 
+                    value: v, 
+                    seriesName: key,
+                    category: props?.payload?.[config.xAxis],
+                    percent, 
+                    style 
+                  });
+                },
               } : false}
             />
           );

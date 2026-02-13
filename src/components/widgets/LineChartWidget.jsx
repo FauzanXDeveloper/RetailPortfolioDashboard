@@ -124,7 +124,26 @@ export default function LineChartWidget({ widget }) {
               label={style.showDataLabels ? {
                 position: style.dataLabelPosition || "top",
                 ...buildDataLabelStyle(style),
-                formatter: (v) => buildDataLabelContent({ value: v, seriesName: key, style }),
+                formatter: (v, name, props) => {
+                  let percent = null;
+                  
+                  // Calculate percentage for line charts
+                  if (style.labelShowPercentage && chartData && v != null) {
+                    // For line charts: percentage of total for this series across all data points
+                    const seriesTotal = chartData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+                    if (seriesTotal > 0) {
+                      percent = (v / seriesTotal) * 100;
+                    }
+                  }
+                  
+                  return buildDataLabelContent({ 
+                    value: v, 
+                    seriesName: key,
+                    category: props?.payload?.[config.xAxis],
+                    percent, 
+                    style 
+                  });
+                },
               } : false}
             />
           );

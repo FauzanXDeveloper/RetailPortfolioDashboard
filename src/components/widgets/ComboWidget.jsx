@@ -63,7 +63,26 @@ export default function ComboWidget({ widget }) {
               position={style.dataLabelPosition || "top"}
               style={buildDataLabelStyle(style)}
               angle={style.dataLabelRotation || 0}
-              formatter={(v) => buildDataLabelContent({ value: v, seriesName: config.barMeasure, style })}
+              formatter={(v, name, props) => {
+                let percent = null;
+                
+                // Calculate percentage for combo chart bar component
+                if (style.labelShowPercentage && chartData && v != null) {
+                  // Percentage of total for bar measure across all data points
+                  const barTotal = chartData.reduce((sum, row) => sum + (Number(row[config.barMeasure]) || 0), 0);
+                  if (barTotal > 0) {
+                    percent = (v / barTotal) * 100;
+                  }
+                }
+                
+                return buildDataLabelContent({ 
+                  value: v, 
+                  seriesName: config.barMeasure,
+                  category: props?.payload?.[config.xAxis],
+                  percent, 
+                  style 
+                });
+              }}
             />
           )}
         </Bar>
@@ -79,7 +98,26 @@ export default function ComboWidget({ widget }) {
             label={style.showDataLabels ? {
               position: style.dataLabelPosition || "top",
               ...buildDataLabelStyle(style),
-              formatter: (v) => buildDataLabelContent({ value: v, seriesName: config.lineMeasure, style }),
+              formatter: (v, name, props) => {
+                let percent = null;
+                
+                // Calculate percentage for combo chart line component
+                if (style.labelShowPercentage && chartData && v != null && config.lineMeasure) {
+                  // Percentage of total for line measure across all data points
+                  const lineTotal = chartData.reduce((sum, row) => sum + (Number(row[config.lineMeasure]) || 0), 0);
+                  if (lineTotal > 0) {
+                    percent = (v / lineTotal) * 100;
+                  }
+                }
+                
+                return buildDataLabelContent({ 
+                  value: v, 
+                  seriesName: config.lineMeasure,
+                  category: props?.payload?.[config.xAxis],
+                  percent, 
+                  style 
+                });
+              },
             } : false}
           />
         )}
