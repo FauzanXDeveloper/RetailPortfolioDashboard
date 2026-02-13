@@ -7,6 +7,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
+import { ConfigSection, ConfigSelect, DataSourceInfo } from "./ConfigFieldComponents";
 
 export default function DataTableConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -41,19 +42,18 @@ export default function DataTableConfig({ widget }) {
     <div>
       <div className="flex border-b border-gray-200 mb-3">
         {["data", "filters", "formatting"].map((t) => (
-          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>
+            {t === "data" ? "📊 Data" : t === "filters" ? "🔍 Filters" : "🎨 Format"}
+          </button>
         ))}
       </div>
 
       {tab === "data" && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Source</label>
-            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.dataSource || ""} onChange={(e) => update("dataSource", e.target.value)}>
-              <option value="">Select...</option>
-              {dataSources.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          </div>
+          <ConfigSection label="Data Source" icon="📊">
+            <ConfigSelect label="Source" value={config.dataSource} onChange={(v) => update("dataSource", v)} options={dataSources.map((ds) => ({ value: ds.id, label: ds.name }))} placeholder="Select data source..." />
+            {ds && <DataSourceInfo ds={ds} />}
+          </ConfigSection>
 
           {ds && (
             <>

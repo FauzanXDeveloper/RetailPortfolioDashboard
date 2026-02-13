@@ -4,9 +4,9 @@
 import React, { useState } from "react";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
-import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
+import { ConfigSection, ConfigSelect, AggregationPills, DataSourceInfo, ConfigNumber } from "./ConfigFieldComponents";
 
 export default function PieChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -27,49 +27,32 @@ export default function PieChartConfig({ widget }) {
     <div>
       <div className="flex border-b border-gray-200 mb-3">
         {["data", "filters", "style"].map((t) => (
-          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>
+            {t === "data" ? "📊 Data" : t === "filters" ? "🔍 Filters" : "🎨 Style"}
+          </button>
         ))}
       </div>
 
       {tab === "data" && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Source</label>
-            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.dataSource || ""} onChange={(e) => update("dataSource", e.target.value)}>
-              <option value="">Select...</option>
-              {dataSources.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          </div>
+          <ConfigSection label="Data Source" icon="📊">
+            <ConfigSelect label="Source" value={config.dataSource} onChange={(v) => update("dataSource", v)} options={dataSources.map((ds) => ({ value: ds.id, label: ds.name }))} placeholder="Select data source..." />
+            {ds && <DataSourceInfo ds={ds} />}
+          </ConfigSection>
           {ds && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Dimension (Slices)</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.dimension || ""} onChange={(e) => update("dimension", e.target.value)}>
-                  <option value="">Select...</option>
-                  {allFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Measure (Size)</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.measure || ""} onChange={(e) => update("measure", e.target.value)}>
-                  <option value="">Select...</option>
-                  {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Aggregation</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.aggregation || "sum"} onChange={(e) => update("aggregation", e.target.value)}>
-                  {["sum", "average", "count", "min", "max"].map((a) => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Limit Slices</label>
-                <input type="number" min={1} max={50} className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.limitSlices || 10} onChange={(e) => update("limitSlices", Number(e.target.value))} />
-              </div>
-              <label className="flex items-center gap-2 text-xs">
-                <input type="checkbox" checked={config.combineOthers !== false} onChange={(e) => update("combineOthers", e.target.checked)} />
-                Combine remaining into "Others"
-              </label>
+              <ConfigSection label="Fields" icon="📐">
+                <ConfigSelect label="Dimension (Slices)" badge="dimension" value={config.dimension} onChange={(v) => update("dimension", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
+                <ConfigSelect label="Measure (Size)" badge="measure" value={config.measure} onChange={(v) => update("measure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+              </ConfigSection>
+              <ConfigSection label="Aggregation & Limits" icon="⚡" collapsible defaultOpen={false}>
+                <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
+                <ConfigNumber label="Limit Slices" value={config.limitSlices || 10} onChange={(v) => update("limitSlices", v)} min={1} max={50} />
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={config.combineOthers !== false} onChange={(e) => update("combineOthers", e.target.checked)} />
+                  Combine remaining into "Others"
+                </label>
+              </ConfigSection>
             </>
           )}
         </div>
@@ -174,16 +157,6 @@ export default function PieChartConfig({ widget }) {
             <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.colorScheme || "Default"} onChange={(e) => updateStyle("colorScheme", e.target.value)}>
               {["Default", "Blues", "Greens", "Warm"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-          </div>
-          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Accent Border</label>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={style.accentBorder || false} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
-              Show Left Border
-            </label>
-            {style.accentBorder && (
-              <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
-            )}
           </div>
 
           {/* Widget Appearance */}

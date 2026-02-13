@@ -2,6 +2,7 @@
  * Chart helper utilities.
  * Provide default colors, formatting, and configuration presets for Recharts.
  */
+import React from "react";
 
 // Default color palettes
 export const CHART_COLORS = [
@@ -164,15 +165,59 @@ export function buildDataLabelContent({ value, category, percent, seriesName, st
 }
 
 /**
+ * Custom SVG label renderer for Recharts LabelList.
+ * Handles newline separator by rendering <tspan> elements.
+ */
+export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored, ...rest }) {
+  // `rest` may have labelStyle injected by buildLabelListProps
+  const labelStyle = rest.labelStyle || {};
+  const widgetStyle = rest.widgetStyle || {};
+  const text = buildDataLabelContent({ value, style: widgetStyle });
+  const lines = text.split("\n");
+  const fontSize = labelStyle.fontSize || 10;
+
+  return (
+    <text
+      x={x + (width ? width / 2 : 0)}
+      y={y}
+      textAnchor="middle"
+      fill={labelStyle.fill || "#374151"}
+      fontSize={fontSize}
+      fontWeight={labelStyle.fontWeight || "normal"}
+      fontStyle={labelStyle.fontStyle || "normal"}
+      fontFamily={labelStyle.fontFamily}
+    >
+      {lines.map((line, i) => (
+        <tspan key={i} x={x + (width ? width / 2 : 0)} dy={i === 0 ? -fontSize * (lines.length - 1) * 0.5 : fontSize * 1.2}>
+          {line}
+        </tspan>
+      ))}
+    </text>
+  );
+}
+
+/**
  * Build LabelList props for Recharts Bar/Line/Area charts.
  * Returns null if labels are disabled.
+ * Uses custom SVG renderer for newline separator support.
  */
 export function buildLabelListProps(style = {}, dataKey) {
   if (!style.showDataLabels) return null;
+  const lStyle = buildDataLabelStyle(style);
+  const sep = style.labelSeparator || "newline";
+
+  // For newline separator, we need a custom SVG content renderer
+  if (sep === "newline") {
+    return {
+      dataKey,
+      position: style.dataLabelPosition || "top",
+      content: (props) => renderSvgDataLabel({ ...props, labelStyle: lStyle, widgetStyle: style }),
+    };
+  }
   return {
     dataKey,
     position: style.dataLabelPosition || "top",
-    style: buildDataLabelStyle(style),
+    style: lStyle,
     angle: style.dataLabelRotation || 0,
     formatter: (v) => buildDataLabelContent({ value: v, style }),
   };

@@ -6,6 +6,7 @@ import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
+import { ConfigSection, ConfigSelect, AggregationPills, DataSourceInfo } from "./ConfigFieldComponents";
 
 export default function ComboConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -26,56 +27,31 @@ export default function ComboConfig({ widget }) {
     <div>
       <div className="flex border-b border-gray-200 mb-3">
         {["data", "filters", "style"].map((t) => (
-          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>{t}</button>
+          <button key={t} className={`px-3 py-1.5 text-xs font-medium capitalize ${tab === t ? "border-b-2 border-brand-500 text-brand-600" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setTab(t)}>
+            {t === "data" ? "📊 Data" : t === "filters" ? "🔍 Filters" : "🎨 Style"}
+          </button>
         ))}
       </div>
 
       {tab === "data" && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Source</label>
-            <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.dataSource || ""} onChange={(e) => update("dataSource", e.target.value)}>
-              <option value="">Select...</option>
-              {dataSources.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          </div>
+          <ConfigSection label="Data Source" icon="📊">
+            <ConfigSelect label="Source" value={config.dataSource} onChange={(v) => update("dataSource", v)} options={dataSources.map((ds) => ({ value: ds.id, label: ds.name }))} placeholder="Select data source..." />
+            {ds && <DataSourceInfo ds={ds} />}
+          </ConfigSection>
           {ds && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">X-Axis (Dimension)</label>
-                <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.xAxis || ""} onChange={(e) => update("xAxis", e.target.value)}>
-                  <option value="">Select...</option>
-                  {allFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bar Measure</label>
-                <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.barMeasure || ""} onChange={(e) => update("barMeasure", e.target.value)}>
-                  <option value="">Select...</option>
-                  {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Line Measure</label>
-                <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.lineMeasure || ""} onChange={(e) => update("lineMeasure", e.target.value)}>
-                  <option value="">None</option>
-                  {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bar Aggregation</label>
-                <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.aggregation || "sum"} onChange={(e) => update("aggregation", e.target.value)}>
-                  {["sum", "average", "count", "min", "max"].map((a) => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-              {config.lineMeasure && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Line Aggregation</label>
-                  <select className="w-full text-xs border rounded-md px-2 py-1.5" value={config.lineAggregation || "average"} onChange={(e) => update("lineAggregation", e.target.value)}>
-                    {["sum", "average", "count", "min", "max"].map((a) => <option key={a} value={a}>{a}</option>)}
-                  </select>
-                </div>
-              )}
+              <ConfigSection label="Fields" icon="📐">
+                <ConfigSelect label="X-Axis (Dimension)" badge="dimension" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+                <ConfigSelect label="Bar Measure" badge="measure" value={config.barMeasure} onChange={(v) => update("barMeasure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+                <ConfigSelect label="Line Measure" badge="optional" value={config.lineMeasure} onChange={(v) => update("lineMeasure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="None" />
+              </ConfigSection>
+              <ConfigSection label="Aggregation" icon="⚡" collapsible defaultOpen={false}>
+                <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
+                {config.lineMeasure && (
+                  <ConfigSelect label="Line Aggregation" value={config.lineAggregation || "average"} onChange={(v) => update("lineAggregation", v)} options={["sum", "average", "count", "min", "max"].map((a) => ({ value: a, label: a }))} />
+                )}
+              </ConfigSection>
             </>
           )}
         </div>
@@ -93,12 +69,6 @@ export default function ComboConfig({ widget }) {
             <label className="block text-xs font-medium text-gray-600 mb-1">Line Color</label>
             <input type="color" value={style.lineColor || "#EF4444"} onChange={(e) => updateStyle("lineColor", e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
           </div>
-          <label className="flex items-center gap-2 text-xs">
-            <input type="checkbox" checked={style.showGridLines !== false} onChange={(e) => updateStyle("showGridLines", e.target.checked)} /> Show Grid Lines
-          </label>
-          <label className="flex items-center gap-2 text-xs">
-            <input type="checkbox" checked={style.showLegend !== false} onChange={(e) => updateStyle("showLegend", e.target.checked)} /> Show Legend
-          </label>
           <WidgetStyleConfig style={style} updateStyle={updateStyle} updateStyleBatch={updateStyleBatch} />
         </div>
       )}

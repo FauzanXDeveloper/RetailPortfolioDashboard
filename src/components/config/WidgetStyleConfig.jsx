@@ -73,6 +73,7 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
     { key: "appearance", label: "🎨 Look" },
     { key: "shadow", label: "🌓 Shadow" },
     { key: "title", label: "✏️ Title" },
+    { key: "display", label: "⚙️ Display" },
     { key: "labels", label: "🏷️ Labels" },
     { key: "margins", label: "📐 Margins" },
     { key: "tooltip", label: "💬 Tooltip" },
@@ -303,6 +304,74 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
           </div>
           <ColorPicker label="Subtitle Color" value={style.subtitleColor || "#9ca3af"}
             onChange={(c) => updateStyle("subtitleColor", c)} />
+        </div>
+      )}
+
+      {/* ── DISPLAY OPTIONS ── */}
+      {section === "display" && (
+        <div className="space-y-3">
+          <p className="text-[10px] text-gray-400">Toggle chart display elements. These apply to most chart types.</p>
+          <div className="space-y-2">
+            {[
+              ["showGridLines", "Grid Lines", "Show/hide grid lines behind chart"],
+              ["showLegend", "Legend", "Show/hide the chart legend"],
+              ["showAxisTitles", "Axis Titles", "Show/hide axis title labels"],
+              ["showValueFormatted", "Format Values (commas)", "Add comma separators to numbers"],
+              ["showDataPoints", "Data Points", "Show dots on line/area charts"],
+            ].map(([key, label, desc]) => (
+              <label key={key} className="flex items-start gap-2 text-xs cursor-pointer group">
+                <input type="checkbox" checked={style[key] !== false}
+                  onChange={(e) => updateStyle(key, e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
+                <div>
+                  <span className="font-medium text-gray-700 group-hover:text-gray-900">{label}</span>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+          {style.showAxisTitles && (
+            <div className="pl-3 border-l-2 border-brand-200 space-y-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">X-Axis Title</label>
+                <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+                  value={style.xAxisTitle || ""} onChange={(e) => updateStyle("xAxisTitle", e.target.value)}
+                  placeholder="Enter X-axis title..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Y-Axis Title</label>
+                <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400"
+                  value={style.yAxisTitle || ""} onChange={(e) => updateStyle("yAxisTitle", e.target.value)}
+                  placeholder="Enter Y-axis title..." />
+              </div>
+            </div>
+          )}
+          <div className="space-y-2 pt-2 border-t border-gray-200">
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Grid Options</label>
+            {[
+              ["gridHorizontal", "Horizontal Grid Lines"],
+              ["gridVertical", "Vertical Grid Lines"],
+            ].map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
+                <input type="checkbox" checked={style[key] !== false}
+                  onChange={(e) => updateStyle(key, e.target.checked)}
+                  className="rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
+                {label}
+              </label>
+            ))}
+          </div>
+          <div className="space-y-2 pt-2 border-t border-gray-200">
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Accent Border</label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={style.accentBorder || false}
+                onChange={(e) => updateStyle("accentBorder", e.target.checked)}
+                className="rounded border-gray-300 text-brand-600 focus:ring-brand-400" />
+              Show Left Accent Border
+            </label>
+            {style.accentBorder && (
+              <ColorPicker label="Accent Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
+            )}
+          </div>
         </div>
       )}
 

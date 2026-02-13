@@ -7,6 +7,7 @@ import { detectColumnTypes } from "../../utils/dataProcessing";
 import { ColorPicker } from "../common/CommonComponents";
 import FilterConfig from "./FilterConfig";
 import WidgetStyleConfig from "./WidgetStyleConfig";
+import { ConfigSection, ConfigSelect, AggregationPills, DataSourceInfo } from "./ConfigFieldComponents";
 
 export default function LineChartConfig({ widget }) {
   const { dataSources, updateWidgetConfig } = useDashboardStore();
@@ -37,78 +38,80 @@ export default function LineChartConfig({ widget }) {
             }`}
             onClick={() => setTab(t)}
           >
-            {t}
+            {t === "data" ? "📊 Data" : t === "filters" ? "🔍 Filters" : "🎨 Style"}
           </button>
         ))}
       </div>
 
       {tab === "data" && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Source</label>
-            <select
-              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-indigo-400"
-              value={config.dataSource || ""}
-              onChange={(e) => update("dataSource", e.target.value)}
-            >
-              <option value="">Select...</option>
-              {dataSources.map((ds) => (
-                <option key={ds.id} value={ds.id}>{ds.name}</option>
-              ))}
-            </select>
-          </div>
+          <ConfigSection label="Data Source" icon="📊">
+            <ConfigSelect
+              label="Source"
+              value={config.dataSource}
+              onChange={(v) => update("dataSource", v)}
+              options={dataSources.map((ds) => ({ value: ds.id, label: ds.name }))}
+              placeholder="Select data source..."
+            />
+            {ds && <DataSourceInfo ds={ds} />}
+          </ConfigSection>
+
           {ds && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">X-Axis</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.xAxis || ""} onChange={(e) => update("xAxis", e.target.value)}>
-                  <option value="">Select...</option>
-                  {allFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Y-Axis (Metric)</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.yAxis || ""} onChange={(e) => update("yAxis", e.target.value)}>
-                  <option value="">Select...</option>
-                  {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Aggregation</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.aggregation || "sum"} onChange={(e) => update("aggregation", e.target.value)}>
-                  {["sum", "average", "count", "min", "max"].map((a) => (
-                    <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>
+              <ConfigSection label="Fields" icon="📐">
+                <ConfigSelect
+                  label="X-Axis"
+                  badge="dimension"
+                  value={config.xAxis}
+                  onChange={(v) => update("xAxis", v)}
+                  options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))}
+                  placeholder="Select field..."
+                />
+                <ConfigSelect
+                  label="Y-Axis"
+                  badge="measure"
+                  value={config.yAxis}
+                  onChange={(v) => update("yAxis", v)}
+                  options={numericFields.map((f) => ({ value: f, label: f }))}
+                  placeholder="Select field..."
+                />
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Additional Lines
+                    <span className="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-gray-100 text-gray-500">optional</span>
+                  </label>
+                  {(config.additionalLines || []).map((line, idx) => (
+                    <div key={idx} className="flex gap-1 mb-1">
+                      <select className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-400" value={line} onChange={(e) => {
+                        const lines = [...(config.additionalLines || [])];
+                        lines[idx] = e.target.value;
+                        update("additionalLines", lines);
+                      }}>
+                        {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <button className="text-red-400 hover:text-red-600 text-xs px-1 rounded hover:bg-red-50" onClick={() => {
+                        const lines = (config.additionalLines || []).filter((_, i) => i !== idx);
+                        update("additionalLines", lines);
+                      }}>×</button>
+                    </div>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Additional Lines</label>
-                {(config.additionalLines || []).map((line, idx) => (
-                  <div key={idx} className="flex gap-1 mb-1">
-                    <select className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 outline-none" value={line} onChange={(e) => {
-                      const lines = [...(config.additionalLines || [])];
-                      lines[idx] = e.target.value;
-                      update("additionalLines", lines);
-                    }}>
-                      {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                    <button className="text-red-400 hover:text-red-600 text-xs px-1" onClick={() => {
-                      const lines = (config.additionalLines || []).filter((_, i) => i !== idx);
-                      update("additionalLines", lines);
-                    }}>×</button>
-                  </div>
-                ))}
-                <button className="text-xs text-indigo-600 hover:text-indigo-800" onClick={() => {
-                  update("additionalLines", [...(config.additionalLines || []), numericFields[0] || ""]);
-                }}>+ Add Line</button>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Group By (Optional)</label>
-                <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={config.groupBy || ""} onChange={(e) => update("groupBy", e.target.value)}>
-                  <option value="">None</option>
-                  {textFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
+                  <button className="text-[10px] text-brand-600 hover:text-brand-800 font-medium" onClick={() => {
+                    update("additionalLines", [...(config.additionalLines || []), numericFields[0] || ""]);
+                  }}>+ Add Line</button>
+                </div>
+                <ConfigSelect
+                  label="Group By"
+                  badge="optional"
+                  value={config.groupBy}
+                  onChange={(v) => update("groupBy", v)}
+                  options={textFields.map((f) => ({ value: f, label: f }))}
+                  placeholder="None"
+                />
+              </ConfigSection>
+
+              <ConfigSection label="Aggregation" icon="⚡" collapsible defaultOpen={false}>
+                <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
+              </ConfigSection>
             </>
           )}
         </div>
@@ -191,20 +194,8 @@ export default function LineChartConfig({ widget }) {
             <input type="checkbox" checked={style.axisBold || false} onChange={(e) => updateStyle("axisBold", e.target.checked)} />
             Bold Axis Labels
           </label>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Label Position</label>
-            <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none"
-              value={style.dataLabelPosition || "top"} onChange={(e) => updateStyle("dataLabelPosition", e.target.value)}>
-              <option value="top">Top</option><option value="bottom">Bottom</option><option value="left">Left</option><option value="right">Right</option><option value="center">Center</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data Label Size: {style.dataLabelSize || 10}</label>
-            <input type="range" min={8} max={18} value={style.dataLabelSize || 10} onChange={(e) => updateStyle("dataLabelSize", Number(e.target.value))} className="w-full" />
-          </div>
           <ColorPicker label="Axis Color" value={style.axisColor || "#6b7280"} onChange={(c) => updateStyle("axisColor", c)} />
           <ColorPicker label="Grid Color" value={style.gridColor || "#e5e7eb"} onChange={(c) => updateStyle("gridColor", c)} />
-          <ColorPicker label="Data Label Color" value={style.dataLabelColor || "#374151"} onChange={(c) => updateStyle("dataLabelColor", c)} />
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Legend Position</label>
             <div className="flex gap-2">
@@ -215,43 +206,6 @@ export default function LineChartConfig({ widget }) {
                 </label>
               ))}
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Display Options</label>
-            {[["showDataPoints", "Data Points"], ["showGridLines", "Grid Lines"], ["showLegend", "Legend"], ["showAreaFill", "Area Fill"], ["showDataLabels", "Data Labels"], ["showValueFormatted", "Format Values (commas)"], ["showAxisTitles", "Axis Titles"]].map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-xs">
-                <input type="checkbox" checked={style[key] !== false} onChange={(e) => updateStyle(key, e.target.checked)} />
-                {label}
-              </label>
-            ))}
-          </div>
-          {style.showAreaFill && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Area Opacity: {style.areaFillOpacity ?? 0.3}</label>
-              <input type="range" min={0} max={100} value={(style.areaFillOpacity ?? 0.3) * 100} onChange={(e) => updateStyle("areaFillOpacity", Number(e.target.value) / 100)} className="w-full" />
-            </div>
-          )}
-          {style.showAxisTitles && (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">X-Axis Title</label>
-                <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.xAxisTitle || ""} onChange={(e) => updateStyle("xAxisTitle", e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Y-Axis Title</label>
-                <input className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 outline-none" value={style.yAxisTitle || ""} onChange={(e) => updateStyle("yAxisTitle", e.target.value)} />
-              </div>
-            </>
-          )}
-          <div className="p-2 bg-gray-50 rounded-lg space-y-2">
-            <label className="block text-xs font-medium text-gray-600">Accent Border</label>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={style.accentBorder || false} onChange={(e) => updateStyle("accentBorder", e.target.checked)} />
-              Show Left Border
-            </label>
-            {style.accentBorder && (
-              <ColorPicker label="Border Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
-            )}
           </div>
 
           {/* Widget Appearance */}
