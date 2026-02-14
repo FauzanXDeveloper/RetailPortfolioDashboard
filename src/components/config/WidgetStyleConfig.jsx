@@ -128,6 +128,12 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
 
           <ColorPicker label="Background Color" value={style.widgetBgColor || "#ffffff"} onChange={(c) => updateStyle("widgetBgColor", c)} />
 
+          <div className="space-y-2 pt-2 border-t border-gray-200">
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Text Colors</label>
+            <ColorPicker label="Axis / Label Color" value={style.axisColor || "#6b7280"} onChange={(c) => updateStyle("axisColor", c)} />
+            <ColorPicker label="Widget Text Color" value={style.textColor || "#374151"} onChange={(c) => updateStyle("textColor", c)} />
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Background Opacity: {Math.round((style.widgetBgOpacity ?? 1) * 100)}%
@@ -406,11 +412,6 @@ export default function WidgetStyleConfig({ style = {}, updateStyle, updateStyle
             {style.accentBorder && (
               <ColorPicker label="Accent Color" value={style.accentColor || "#4F46E5"} onChange={(c) => updateStyle("accentColor", c)} />
             )}
-          </div>
-          <div className="space-y-2 pt-2 border-t border-gray-200">
-            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Text Colors</label>
-            <ColorPicker label="Axis / Label Color" value={style.axisColor || "#6b7280"} onChange={(c) => updateStyle("axisColor", c)} />
-            <ColorPicker label="Widget Text Color" value={style.textColor || "#374151"} onChange={(c) => updateStyle("textColor", c)} />
           </div>
         </div>
       )}

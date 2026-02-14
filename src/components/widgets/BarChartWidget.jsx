@@ -178,9 +178,9 @@ export default function BarChartWidget({ widget }) {
           const seriesColors = style.seriesColors || {};
           const seriesColor = seriesColors[key] || (barKeys.length > 1 ? getColor(idx) : (style.barColor || "#1a3ab5"));
 
-          // Pre-compute percentage map for this series
+          // Pre-compute percentage map for this series (always compute when showDataLabels is true)
           const percentMap = (() => {
-            if (!style.labelShowPercentage || !displayData) return null;
+            if (!style.showDataLabels || !displayData) return null;
             const map = {};
             if (style.stacking) {
               displayData.forEach((row) => {

@@ -112,9 +112,9 @@ export default function LineChartWidget({ widget }) {
           const seriesColors = style.seriesColors || {};
           const lineColor = seriesColors[key] || getColor(idx);
 
-          // Pre-compute percentage map
+          // Pre-compute percentage map (always compute when showDataLabels is true)
           const percentMap = (() => {
-            if (!style.labelShowPercentage || !chartData) return null;
+            if (!style.showDataLabels || !chartData) return null;
             const map = {};
             const seriesTotal = chartData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
             chartData.forEach((row) => {

@@ -67,6 +67,25 @@ export default function Canvas() {
     [updateLayout]
   );
 
+  // Auto-scroll when dragging near edges
+  const handleDrag = useCallback((layout, oldItem, newItem, placeholder, e, element) => {
+    const container = containerRef.current;
+    if (!container || !e) return;
+    const rect = container.getBoundingClientRect();
+    const scrollSpeed = 15;
+    const edgeThreshold = 80;
+    const mouseY = e.clientY;
+    
+    // Scroll up when near top edge
+    if (mouseY - rect.top < edgeThreshold) {
+      container.scrollTop = Math.max(0, container.scrollTop - scrollSpeed);
+    }
+    // Scroll down when near bottom edge
+    if (rect.bottom - mouseY < edgeThreshold) {
+      container.scrollTop += scrollSpeed;
+    }
+  }, []);
+
   // Build background style from dashboard theme
   const bgStyle = React.useMemo(() => {
     if (!theme.bgType || theme.bgType === "default") return {};
@@ -117,6 +136,7 @@ export default function Canvas() {
           rowHeight={60}
           width={width}
           onLayoutChange={handleLayoutChange}
+          onDrag={handleDrag}
           draggableHandle=".drag-handle"
           resizeHandles={["se"]}
           compactType={null}

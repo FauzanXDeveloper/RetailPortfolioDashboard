@@ -98,9 +98,9 @@ export default function AreaChartWidget({ widget }) {
           const seriesColors = style.seriesColors || {};
           const areaColor = seriesColors[key] || getColor(idx);
 
-          // Pre-compute percentage map
+          // Pre-compute percentage map (always compute when showDataLabels is true)
           const percentMap = (() => {
-            if (!style.labelShowPercentage || !chartData) return null;
+            if (!style.showDataLabels || !chartData) return null;
             const map = {};
             if (stackId) {
               chartData.forEach((row) => {

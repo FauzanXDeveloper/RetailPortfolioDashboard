@@ -57,9 +57,9 @@ export default function ComboWidget({ widget }) {
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && <Legend {...buildLegendProps(style)} />}
         {(() => {
-          // Pre-compute percentage map for bar measure
+          // Pre-compute percentage map for bar measure (always compute when showDataLabels is true)
           const barPercentMap = (() => {
-            if (!style.labelShowPercentage || !chartData) return null;
+            if (!style.showDataLabels || !chartData) return null;
             const map = {};
             const barTotal = chartData.reduce((sum, row) => sum + (Number(row[config.barMeasure]) || 0), 0);
             chartData.forEach((row) => {
@@ -76,9 +76,9 @@ export default function ComboWidget({ widget }) {
           );
         })()}
         {config.lineMeasure && (() => {
-          // Pre-compute percentage map for line measure
+          // Pre-compute percentage map for line measure (always compute when showDataLabels is true)
           const linePercentMap = (() => {
-            if (!style.labelShowPercentage || !chartData) return null;
+            if (!style.showDataLabels || !chartData) return null;
             const map = {};
             const lineTotal = chartData.reduce((sum, row) => sum + (Number(row[config.lineMeasure]) || 0), 0);
             chartData.forEach((row) => {
