@@ -196,24 +196,18 @@ export function buildDataLabelContent({ value, category, percent, seriesName, st
   const parts = [];
   const sep = SEPARATOR_MAP[style.labelSeparator || "newline"] || "\n";
 
-  // If user has explicitly configured any label option, respect their choices.
-  // Only fall back to showing value if no label options have been set at all.
-  const hasExplicitConfig = style.labelShowValue !== undefined ||
-    style.labelShowCategory || style.labelShowPercentage || style.labelShowSeriesName;
-
-  const showValue = hasExplicitConfig ? (style.labelShowValue || false) : true;
-  const showCategory = style.labelShowCategory || false;
-  const showPercentage = style.labelShowPercentage || false;
-  const showSeriesName = style.labelShowSeriesName || false;
+  // Use nullish coalescing like PieChart does for consistency
+  const showCategory = style.labelShowCategory ?? false;
+  const showValue = style.labelShowValue ?? true;  // Default to true if not set
+  const showPercentage = style.labelShowPercentage ?? false;
+  const showSeriesName = style.labelShowSeriesName ?? false;
 
   if (showSeriesName && seriesName) parts.push(seriesName);
-  if (showCategory && category) parts.push(category);
+  if (showCategory && category) parts.push(String(category));
   if (showValue && value != null) parts.push(formatNumber(value, style));
   if (showPercentage && percent != null) parts.push(percent.toFixed(1) + "%");
 
-  // If user explicitly turned off everything, return empty string
-  if (hasExplicitConfig && parts.length === 0) return "";
-
+  // Return formatted text or fallback to value
   return parts.length > 0 ? parts.join(sep) : formatNumber(value, style);
 }
 
@@ -229,14 +223,18 @@ export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored
   const seriesName = rest.seriesName;
   const xAxisKey = rest.xAxisKey;
   const percentMap = rest.percentMap;
-  const payload = rest.payload || rest;
-  const category = xAxisKey && payload ? payload[xAxisKey] : undefined;
+  const chartData = rest.chartData;
   const labelPosition = rest.labelPosition || "top";
+
+  // Use index to look up the data row from chartData
+  const idx = rest.index;
+  const dataRow = (chartData && idx !== undefined) ? chartData[idx] : null;
+  const category = dataRow ? dataRow[xAxisKey] : undefined;
 
   // Compute percent from percentMap if provided
   let percent = null;
-  if (percentMap && payload && xAxisKey) {
-    const mapKey = `${seriesName || rest.dataKey}::${payload[xAxisKey]}`;
+  if (percentMap && category) {
+    const mapKey = `${seriesName || rest.dataKey}::${category}`;
     percent = percentMap[mapKey] ?? null;
   }
 
@@ -321,8 +319,15 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
   if (!style.showDataLabels) return null;
   const lStyle = buildDataLabelStyle(style);
   const sep = style.labelSeparator || "newline";
-  const { seriesName, xAxisKey, percentMap } = extra;
+  const { seriesName, xAxisKey, percentMap, chartData } = extra;
   const pos = style.dataLabelPosition || "top";
+
+  // Extract label flags to avoid closure issues with object reference
+  const labelShowValue = style.labelShowValue;
+  const labelShowCategory = style.labelShowCategory;
+  const labelShowPercentage = style.labelShowPercentage;
+  const labelShowSeriesName = style.labelShowSeriesName;
+  const labelSeparator = style.labelSeparator;
 
   // Always use custom SVG content renderer for proper newline + percent + category support
   if (sep === "newline") {
@@ -332,10 +337,19 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
       content: (props) => renderSvgDataLabel({
         ...props,
         labelStyle: lStyle,
-        widgetStyle: style,
+        widgetStyle: {
+          ...style,
+          // Explicitly pass label flags to ensure fresh values
+          labelShowValue,
+          labelShowCategory,
+          labelShowPercentage,
+          labelShowSeriesName,
+          labelSeparator,
+        },
         seriesName,
         xAxisKey,
         percentMap,
+        chartData,
         labelPosition: pos,
       }),
     };
@@ -355,7 +369,20 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
         const mapKey = `${seriesName || dataKey}::${category}`;
         percent = percentMap[mapKey] ?? null;
       }
-      return buildDataLabelContent({ value: v, category, seriesName, percent, style });
+      return buildDataLabelContent({
+        value: v,
+        category,
+        seriesName,
+        percent,
+        style: {
+          ...style,
+          labelShowValue,
+          labelShowCategory,
+          labelShowPercentage,
+          labelShowSeriesName,
+          labelSeparator,
+        }
+      });
     },
   };
 }

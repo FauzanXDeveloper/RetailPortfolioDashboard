@@ -198,7 +198,7 @@ export default function BarChartWidget({ widget }) {
             return map;
           })();
 
-          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap });
+          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap, chartData: displayData });
 
           return (
             <Bar

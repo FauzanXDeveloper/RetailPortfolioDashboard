@@ -68,7 +68,7 @@ export default function ComboWidget({ widget }) {
             });
             return map;
           })();
-          const barLabelProps = buildLabelListProps(style, config.barMeasure, { seriesName: config.barMeasure, xAxisKey: config.xAxis, percentMap: barPercentMap });
+          const barLabelProps = buildLabelListProps(style, config.barMeasure, { seriesName: config.barMeasure, xAxisKey: config.xAxis, percentMap: barPercentMap, chartData });
           return (
             <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600}>
               {barLabelProps && <LabelList {...barLabelProps} />}
@@ -87,7 +87,7 @@ export default function ComboWidget({ widget }) {
             });
             return map;
           })();
-          const lineLabelProps = buildLabelListProps(style, config.lineMeasure, { seriesName: config.lineMeasure, xAxisKey: config.xAxis, percentMap: linePercentMap });
+          const lineLabelProps = buildLabelListProps(style, config.lineMeasure, { seriesName: config.lineMeasure, xAxisKey: config.xAxis, percentMap: linePercentMap, chartData });
           return (
             <Line
               yAxisId={config.lineMeasure !== config.barMeasure ? "right" : "left"}
