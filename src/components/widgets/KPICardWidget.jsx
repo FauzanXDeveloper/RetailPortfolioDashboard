@@ -68,8 +68,7 @@ export default function KPICardWidget({ widget }) {
     <div
       className={`flex flex-col ${alignClasses[style.alignment || "center"]} justify-center h-full p-3 rounded-lg`}
       style={{
-        backgroundColor: style.backgroundColor || "#ffffff",
-        color: style.textColor || "#111827",
+        color: style.textColor || style.titleColor || "#111827",
         borderLeft: style.accentBorder ? `4px solid ${style.accentColor || "#4F46E5"}` : undefined,
       }}
     >

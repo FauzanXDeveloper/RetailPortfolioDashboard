@@ -20,7 +20,6 @@ export default function BarChartConfig({ widget }) {
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
   const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
-  const numericFields = allFields.filter((f) => colTypes[f] === "number");
   const textFields = allFields.filter((f) => colTypes[f] !== "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });

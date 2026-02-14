@@ -221,8 +221,9 @@ export function buildDataLabelContent({ value, category, percent, seriesName, st
  * Custom SVG label renderer for Recharts LabelList.
  * Handles newline separator by rendering <tspan> elements.
  * Supports category, seriesName, percent via extra props.
+ * Respects the position prop for proper label placement.
  */
-export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored, ...rest }) {
+export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored, offset, position: _pos, ...rest }) {
   const labelStyle = rest.labelStyle || {};
   const widgetStyle = rest.widgetStyle || {};
   const seriesName = rest.seriesName;
@@ -230,6 +231,8 @@ export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored
   const percentMap = rest.percentMap;
   const payload = rest.payload || rest;
   const category = xAxisKey && payload ? payload[xAxisKey] : undefined;
+  const labelPosition = rest.labelPosition || "top";
+
   // Compute percent from percentMap if provided
   let percent = null;
   if (percentMap && payload && xAxisKey) {
@@ -238,22 +241,67 @@ export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored
   }
 
   const text = buildDataLabelContent({ value, category, seriesName, percent, style: widgetStyle });
+  if (!text) return null;
   const lines = text.split("\n");
   const fontSize = labelStyle.fontSize || 10;
+  const w = width || 0;
+  const h = height || 0;
+
+  // Compute anchor position based on label position
+  let anchorX = x + w / 2;
+  let anchorY = y;
+  let textAnchor = "middle";
+  const pad = 4;
+
+  switch (labelPosition) {
+    case "inside":
+    case "center":
+      anchorX = x + w / 2;
+      anchorY = y + h / 2;
+      break;
+    case "insideTop":
+      anchorX = x + w / 2;
+      anchorY = y + pad + fontSize;
+      break;
+    case "insideBottom":
+      anchorX = x + w / 2;
+      anchorY = y + h - pad;
+      break;
+    case "bottom":
+      anchorX = x + w / 2;
+      anchorY = y + h + pad + fontSize;
+      break;
+    case "left":
+      anchorX = x - pad;
+      anchorY = y + h / 2;
+      textAnchor = "end";
+      break;
+    case "right":
+      anchorX = x + w + pad;
+      anchorY = y + h / 2;
+      textAnchor = "start";
+      break;
+    case "top":
+    default:
+      anchorX = x + w / 2;
+      anchorY = y - pad;
+      break;
+  }
 
   return (
     <text
-      x={x + (width ? width / 2 : 0)}
-      y={y}
-      textAnchor="middle"
+      x={anchorX}
+      y={anchorY}
+      textAnchor={textAnchor}
       fill={labelStyle.fill || "#374151"}
       fontSize={fontSize}
       fontWeight={labelStyle.fontWeight || "normal"}
       fontStyle={labelStyle.fontStyle || "normal"}
       fontFamily={labelStyle.fontFamily}
+      dominantBaseline="central"
     >
       {lines.map((line, i) => (
-        <tspan key={i} x={x + (width ? width / 2 : 0)} dy={i === 0 ? -fontSize * (lines.length - 1) * 0.5 : fontSize * 1.2}>
+        <tspan key={i} x={anchorX} dy={i === 0 ? -fontSize * (lines.length - 1) * 0.5 : fontSize * 1.2}>
           {line}
         </tspan>
       ))}
@@ -274,12 +322,13 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
   const lStyle = buildDataLabelStyle(style);
   const sep = style.labelSeparator || "newline";
   const { seriesName, xAxisKey, percentMap } = extra;
+  const pos = style.dataLabelPosition || "top";
 
   // Always use custom SVG content renderer for proper newline + percent + category support
   if (sep === "newline") {
     return {
       dataKey,
-      position: style.dataLabelPosition || "top",
+      position: pos,
       content: (props) => renderSvgDataLabel({
         ...props,
         labelStyle: lStyle,
@@ -287,6 +336,7 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
         seriesName,
         xAxisKey,
         percentMap,
+        labelPosition: pos,
       }),
     };
   }
@@ -294,7 +344,7 @@ export function buildLabelListProps(style = {}, dataKey, extra = {}) {
   // Non-newline separators: use formatter (no SVG tspan needed)
   return {
     dataKey,
-    position: style.dataLabelPosition || "top",
+    position: pos,
     style: lStyle,
     angle: style.dataLabelRotation || 0,
     formatter: (v, entry) => {

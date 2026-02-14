@@ -1,7 +1,7 @@
 /**
  * Canvas — Main grid layout area with drag-and-drop support.
  */
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import { useDrop } from "react-dnd";
 import { GridLayout } from "react-grid-layout";
 import useDashboardStore from "../store/dashboardStore";
@@ -18,7 +18,7 @@ export default function Canvas() {
   } = useDashboardStore();
 
   const widgets = currentDashboard.widgets || [];
-  const theme = currentDashboard.theme || {};
+  const theme = useMemo(() => currentDashboard.theme || {}, [currentDashboard.theme]);
   const containerRef = useRef(null);
   const [width, setWidth] = useState(1200);
 

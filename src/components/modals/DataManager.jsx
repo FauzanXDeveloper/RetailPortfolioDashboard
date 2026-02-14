@@ -3,7 +3,7 @@
  * Lists existing data sources, allows CSV upload, manual data entry, edit/delete.
  */
 import React, { useState, useRef } from "react";
-import { X, Upload, Plus, Trash2, Edit3, FileSpreadsheet, FileJson, Table2, Globe, Wand2 } from "lucide-react";
+import { X, Upload, Plus, Trash2, Edit3, FileSpreadsheet, FileJson, Table2, Globe, Wand2, ArrowRightLeft } from "lucide-react";
 import Papa from "papaparse";
 import useDashboardStore from "../../store/dashboardStore";
 import { detectColumnTypes } from "../../utils/dataProcessing";
@@ -18,6 +18,8 @@ export default function DataManager() {
     addDataSource,
     updateDataSource,
     deleteDataSource,
+    remapDataSource,
+    currentDashboard,
   } = useDashboardStore();
 
   const [view, setView] = useState("list"); // list | upload | preview | edit | importPreview | api
@@ -33,6 +35,8 @@ export default function DataManager() {
   const [excelWorkbook, setExcelWorkbook] = useState(null);
   const [apiConfig, setApiConfig] = useState({ url: "", method: "GET", headers: "", authType: "none", authValue: "" });
   const [etlDataSource, setEtlDataSource] = useState(null);
+  const [remapFrom, setRemapFrom] = useState(null);
+  const [remapTo, setRemapTo] = useState("");
   const fileRef = useRef(null);
   const excelRef = useRef(null);
   const jsonRef = useRef(null);
@@ -381,6 +385,13 @@ export default function DataManager() {
                       <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-1">
                           <button
+                            onClick={() => { setRemapFrom(ds); setRemapTo(""); }}
+                            className="p-1 hover:bg-amber-100 rounded text-amber-600"
+                            title="Remap all charts to another data source"
+                          >
+                            <ArrowRightLeft size={14} />
+                          </button>
+                          <button
                             onClick={() => setEtlDataSource(ds)}
                             className="p-1 hover:bg-purple-100 rounded text-purple-600"
                             title="Transform (ETL)"
@@ -646,6 +657,59 @@ export default function DataManager() {
           }}
           onClose={() => setEtlDataSource(null)}
         />
+      )}
+
+      {/* Remap Data Source Modal */}
+      {remapFrom && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-96">
+            <h3 className="text-sm font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <ArrowRightLeft size={16} className="text-amber-600" />
+              Remap All Charts
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Switch all widgets currently using <strong>"{remapFrom.name}"</strong> to a different data source. 
+              This is useful when you import new data with the same column structure each month.
+            </p>
+            <div className="mb-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Widgets using this source: {currentDashboard.widgets?.filter((w) => w.config?.dataSource === remapFrom.id).length || 0}
+              </label>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-gray-600 mb-1">New Data Source</label>
+              <select
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none"
+                value={remapTo}
+                onChange={(e) => setRemapTo(e.target.value)}
+              >
+                <option value="">Select target data source...</option>
+                {dataSources.filter((d) => d.id !== remapFrom.id).map((d) => (
+                  <option key={d.id} value={d.id}>{d.name} ({d.data?.length || 0} rows)</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                disabled={!remapTo}
+                onClick={() => {
+                  remapDataSource(remapFrom.id, remapTo);
+                  setRemapFrom(null);
+                  setRemapTo("");
+                }}
+                className="flex-1 px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 font-medium"
+              >
+                Remap All Widgets
+              </button>
+              <button
+                onClick={() => { setRemapFrom(null); setRemapTo(""); }}
+                className="flex-1 px-3 py-1.5 text-xs bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

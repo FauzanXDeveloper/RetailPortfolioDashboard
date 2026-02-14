@@ -3,7 +3,7 @@
  * Provides drag handle, title, settings & delete buttons, pin/unpin, and resize handle.
  */
 import React, { useState } from "react";
-import { Settings, X, GripVertical, Pin, PinOff } from "lucide-react";
+import { Settings, X, GripVertical, Pin, PinOff, Copy } from "lucide-react";
 import useDashboardStore from "../../store/dashboardStore";
 
 // Widget type imports
@@ -65,7 +65,7 @@ const WIDGET_COMPONENTS = {
 };
 
 export default function WidgetContainer({ widget }) {
-  const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId, toggleWidgetPin } =
+  const { selectWidget, removeWidget, updateWidgetTitle, selectedWidgetId, toggleWidgetPin, duplicateWidget } =
     useDashboardStore();
   const [editingTitle, setEditingTitle] = useState(false);
 
@@ -216,6 +216,17 @@ export default function WidgetContainer({ widget }) {
             onMouseDown={(e) => e.stopPropagation()}
           >
             {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+          </button>
+          <button
+            className="p-1 rounded hover:bg-blue-100 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              duplicateWidget(widget.i);
+            }}
+            title="Duplicate widget"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <Copy size={13} className="text-gray-400 hover:text-blue-500" />
           </button>
           <button
             className="p-1 rounded hover:bg-gray-200 transition-colors"

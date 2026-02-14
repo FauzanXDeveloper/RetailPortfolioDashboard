@@ -7,6 +7,7 @@ import {
   Save,
   FolderOpen,
   Download,
+  Upload,
   Database,
   Search,
   X,
@@ -38,6 +39,7 @@ export default function Header() {
     clearGlobalFilters,
     setDataManagerOpen,
     setDashboardTheme,
+    importDashboardData,
     environmentId,
     environmentName,
     leaveEnvironment,
@@ -53,8 +55,28 @@ export default function Header() {
   const [showFilterManager, setShowFilterManager] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const titleRef = useRef(null);
-  // eslint-disable-next-line no-unused-vars
-  const _ = titleRef; // keep ref for future use
+  const importDashRef = useRef(null);
+
+  /** Import a dashboard JSON file */
+  const handleImportDashboard = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const json = JSON.parse(ev.target.result);
+        if (json && json.widgets) {
+          importDashboardData(json);
+        } else {
+          alert("Invalid dashboard file — missing widgets.");
+        }
+      } catch (err) {
+        alert("Failed to parse JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   const handleExportJSON = () => {
     exportAsJSON(currentDashboard);
@@ -348,6 +370,17 @@ export default function Header() {
               </div>
             )}
           </div>
+
+          {/* Import Dashboard */}
+          <button
+            onClick={() => importDashRef.current?.click()}
+            className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
+            title="Import dashboard from JSON file"
+          >
+            <Upload size={14} /> Import
+          </button>
+          <input ref={importDashRef} type="file" accept=".json" className="hidden" onChange={handleImportDashboard} />
+
           <button
             onClick={() => setDataManagerOpen(true)}
             className="flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium transition-colors"
@@ -484,7 +517,7 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
   const MONTH_NAMES = React.useMemo(() => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], []);
 
   // Per-year month selections: { 2025: [0,1], 2024: [9,11] }
-  const yearMonths = df.yearMonths || {};
+  const yearMonths = React.useMemo(() => df.yearMonths || {}, [df.yearMonths]);
 
   // Available months for each selected year (from the data)
   const getMonthsForYear = React.useCallback((year) => {

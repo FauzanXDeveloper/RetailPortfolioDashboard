@@ -373,6 +373,26 @@ const useDashboardStore = create((set, get) => {
       configPanelOpen: s.selectedWidgetId === id ? false : s.configPanelOpen,
     })),
 
+  /** Duplicate a widget (deep copy with new id, placed below original) */
+  duplicateWidget: (id) => {
+    const state = get();
+    const original = state.currentDashboard.widgets.find((w) => w.i === id);
+    if (!original) return null;
+    const newId = `widget-${generateId()}`;
+    const clone = JSON.parse(JSON.stringify(original));
+    clone.i = newId;
+    clone.y = (original.y || 0) + (original.h || 3); // place below original
+    clone.title = `${original.title} (Copy)`;
+    clone.pinned = false;
+    set((s) => ({
+      currentDashboard: {
+        ...s.currentDashboard,
+        widgets: [...s.currentDashboard.widgets, clone],
+      },
+    }));
+    return newId;
+  },
+
   /** Update a widget's config */
   updateWidgetConfig: (id, config) =>
     set((s) => ({
@@ -558,6 +578,21 @@ const useDashboardStore = create((set, get) => {
   /** Get data source by id */
   getDataSource: (id) => {
     return get().dataSources.find((ds) => ds.id === id);
+  },
+
+  /** Remap all widgets from one data source to another */
+  remapDataSource: (oldDsId, newDsId) => {
+    set((s) => ({
+      currentDashboard: {
+        ...s.currentDashboard,
+        widgets: s.currentDashboard.widgets.map((w) => {
+          if (w.config?.dataSource === oldDsId) {
+            return { ...w, config: { ...w.config, dataSource: newDsId } };
+          }
+          return w;
+        }),
+      },
+    }));
   },
 }});
 
