@@ -124,7 +124,7 @@ export default function LineChartWidget({ widget }) {
             return map;
           })();
 
-          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap, chartData: displayData });
+          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap, chartData });
 
           return (
             <Line
