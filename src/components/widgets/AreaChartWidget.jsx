@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
@@ -132,8 +133,9 @@ export default function AreaChartWidget({ widget }) {
               stackId={stackId}
               dot={style.showDataPoints ? { r: style.dotSize || 3 } : false}
               animationDuration={600}
-              label={labelProps || false}
-            />
+            >
+              {labelProps && <LabelList {...labelProps} />}
+            </Area>
           );
         })}
       </AreaChart>
