@@ -18,7 +18,7 @@ export default function AreaChartConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
   const textFields = allFields.filter((f) => colTypes[f] !== "number");
 
@@ -48,19 +48,19 @@ export default function AreaChartConfig({ widget }) {
             <>
               <ConfigSection label="Fields" icon="📐">
                 <ConfigSelect label="X-Axis" badge="dimension" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
-                <ConfigSelect label="Y-Axis" badge="measure" value={config.yAxis} onChange={(v) => update("yAxis", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+                <ConfigSelect label="Y-Axis" badge="measure" value={config.yAxis} onChange={(v) => update("yAxis", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
                 <div>
                   <label className="block text-[11px] font-medium text-gray-600 mb-1">Additional Areas <span className="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-gray-100 text-gray-500">optional</span></label>
                   {(config.additionalLines || []).map((line, idx) => (
                     <div key={idx} className="flex gap-1 mb-1">
                       <select className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:border-brand-400" value={line}
                         onChange={(e) => { const lines = [...(config.additionalLines || [])]; lines[idx] = e.target.value; update("additionalLines", lines); }}>
-                        {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                        {allFields.map((f) => <option key={f} value={f}>{f} ({colTypes[f]})</option>)}
                       </select>
                       <button className="text-red-400 hover:text-red-600 text-xs px-1 rounded hover:bg-red-50" onClick={() => update("additionalLines", (config.additionalLines || []).filter((_, i) => i !== idx))}>×</button>
                     </div>
                   ))}
-                  <button className="text-[10px] text-brand-600 hover:text-brand-800 font-medium" onClick={() => update("additionalLines", [...(config.additionalLines || []), numericFields[0] || ""])}>+ Add Area</button>
+                  <button className="text-[10px] text-brand-600 hover:text-brand-800 font-medium" onClick={() => update("additionalLines", [...(config.additionalLines || []), allFields[0] || ""])}>+ Add Area</button>
                 </div>
                 <ConfigSelect label="Group By" badge="optional" value={config.groupBy} onChange={(v) => update("groupBy", v)} options={textFields.map((f) => ({ value: f, label: f }))} placeholder="None" />
               </ConfigSection>

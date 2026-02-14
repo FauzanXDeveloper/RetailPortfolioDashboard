@@ -16,7 +16,7 @@ export default function ComboConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -43,8 +43,8 @@ export default function ComboConfig({ widget }) {
             <>
               <ConfigSection label="Fields" icon="📐">
                 <ConfigSelect label="X-Axis (Dimension)" badge="dimension" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-                <ConfigSelect label="Bar Measure" badge="measure" value={config.barMeasure} onChange={(v) => update("barMeasure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-                <ConfigSelect label="Line Measure" badge="optional" value={config.lineMeasure} onChange={(v) => update("lineMeasure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="None" />
+                <ConfigSelect label="Bar Measure" badge="measure" value={config.barMeasure} onChange={(v) => update("barMeasure", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
+                <ConfigSelect label="Line Measure" badge="optional" value={config.lineMeasure} onChange={(v) => update("lineMeasure", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="None" />
               </ConfigSection>
               <ConfigSection label="Aggregation" icon="⚡" collapsible defaultOpen={false}>
                 <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
@@ -57,7 +57,7 @@ export default function ComboConfig({ widget }) {
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">

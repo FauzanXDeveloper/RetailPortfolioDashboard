@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
 
 export default function LineChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -111,6 +111,21 @@ export default function LineChartWidget({ widget }) {
         {lineKeys.map((key, idx) => {
           const seriesColors = style.seriesColors || {};
           const lineColor = seriesColors[key] || getColor(idx);
+
+          // Pre-compute percentage map
+          const percentMap = (() => {
+            if (!style.labelShowPercentage || !chartData) return null;
+            const map = {};
+            const seriesTotal = chartData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+            chartData.forEach((row) => {
+              const cat = row[config.xAxis];
+              map[`${key}::${cat}`] = seriesTotal > 0 ? ((Number(row[key]) || 0) / seriesTotal) * 100 : null;
+            });
+            return map;
+          })();
+
+          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap });
+
           return (
             <Line
               key={key}
@@ -121,30 +136,7 @@ export default function LineChartWidget({ widget }) {
               dot={style.showDataPoints !== false ? { r: style.dotSize || 3, fill: lineColor } : false}
               strokeDasharray={isDashed ? "8 4" : (style.lineDashArray || undefined)}
               animationDuration={600}
-              label={style.showDataLabels ? {
-                position: style.dataLabelPosition || "top",
-                ...buildDataLabelStyle(style),
-                formatter: (v, name, props) => {
-                  let percent = null;
-                  
-                  // Calculate percentage for line charts
-                  if (style.labelShowPercentage && chartData && v != null) {
-                    // For line charts: percentage of total for this series across all data points
-                    const seriesTotal = chartData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
-                    if (seriesTotal > 0) {
-                      percent = (v / seriesTotal) * 100;
-                    }
-                  }
-                  
-                  return buildDataLabelContent({ 
-                    value: v, 
-                    seriesName: key,
-                    category: props?.payload?.[config.xAxis],
-                    percent, 
-                    style 
-                  });
-                },
-              } : false}
+              label={labelProps || false}
             />
           );
         })}

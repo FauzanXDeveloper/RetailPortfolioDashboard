@@ -17,7 +17,7 @@ export default function DataTableConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) => updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });

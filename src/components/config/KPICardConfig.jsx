@@ -21,7 +21,7 @@ export default function KPICardConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -49,7 +49,7 @@ export default function KPICardConfig({ widget }) {
           {ds && (
             <>
               <ConfigSection label="Metric" icon="🎯">
-                <ConfigSelect label="Metric Field" badge="measure" value={config.metric} onChange={(v) => update("metric", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+                <ConfigSelect label="Metric Field" badge="measure" value={config.metric} onChange={(v) => update("metric", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
                 <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
               </ConfigSection>
 

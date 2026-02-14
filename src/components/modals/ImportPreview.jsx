@@ -285,7 +285,9 @@ export default function ImportPreview({ data, sourceName, sourceType, onConfirm,
     onConfirm({ name, data: transformedData, type: "custom" });
   };
 
-  const previewData = data.slice(0, 10);
+  const [showAllRows, setShowAllRows] = useState(false);
+
+  const previewData = showAllRows ? data : data.slice(0, 10);
   const includedCols = columns.filter((c) => c.included);
 
   return (
@@ -412,7 +414,21 @@ export default function ImportPreview({ data, sourceName, sourceType, onConfirm,
 
           {/* Converted Data Preview */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Converted Data Preview (first {Math.min(10, data.length)} rows)</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Converted Data Preview ({showAllRows ? `all ${data.length}` : `first ${Math.min(10, data.length)}`} rows)
+              </h3>
+              <button
+                onClick={() => setShowAllRows(!showAllRows)}
+                className={`text-xs px-3 py-1 rounded-lg font-medium transition-colors ${
+                  showAllRows
+                    ? "bg-brand-100 text-brand-700 hover:bg-brand-200"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {showAllRows ? `Show First 10` : `Show All ${data.length} Rows`}
+              </button>
+            </div>
             <div className="border border-gray-200 rounded-lg overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 sticky top-0">

@@ -106,6 +106,17 @@ export default function PieChartWidget({ widget }) {
 
     let aggregated = aggregateData(data, config.dimension, config.measure, config.aggregation || "sum");
 
+    // Merge additional measures
+    if (config.additionalMeasures?.length > 0) {
+      config.additionalMeasures.forEach((measure) => {
+        const extra = aggregateData(data, config.dimension, measure, config.aggregation || "sum");
+        aggregated.forEach((row) => {
+          const match = extra.find((r) => r[config.dimension] === row[config.dimension]);
+          if (match) row[measure] = match[measure];
+        });
+      });
+    }
+
     // Sort descending by measure value
     aggregated.sort((a, b) => (b[config.measure] || 0) - (a[config.measure] || 0));
 
@@ -119,10 +130,17 @@ export default function PieChartWidget({ widget }) {
       aggregated = top;
     }
 
-    return aggregated.map((row) => ({
-      name: row[config.dimension],
-      value: row[config.measure] || 0,
-    }));
+    return aggregated.map((row) => {
+      const entry = {
+        name: row[config.dimension],
+        value: row[config.measure] || 0,
+      };
+      // Include additional measures for tooltip
+      (config.additionalMeasures || []).forEach((m) => {
+        entry[m] = row[m] ?? null;
+      });
+      return entry;
+    });
   }, [dataSources, config, currentDashboard.globalFilters, currentDashboard.widgets, widgetFilterValues, widget.i]);
 
   if (!config.dataSource || !config.dimension || !config.measure) {
@@ -175,8 +193,20 @@ export default function PieChartWidget({ widget }) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value) => formatNumber(value, style)}
-          contentStyle={buildTooltipStyle(style)}
+          content={({ active, payload: tp }) => {
+            if (!active || !tp || !tp.length) return null;
+            const d = tp[0].payload;
+            const ts = buildTooltipStyle(style);
+            return (
+              <div style={{ ...ts, padding: "8px 12px", borderRadius: 6 }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>{d.name}</div>
+                <div>{config.measure}: {formatNumber(d.value, style)}</div>
+                {(config.additionalMeasures || []).map((m) =>
+                  d[m] != null ? <div key={m}>{m}: {formatNumber(d[m], style)}</div> : null
+                )}
+              </div>
+            );
+          }}
         />
         {style.showLegend !== false && (
           <Legend

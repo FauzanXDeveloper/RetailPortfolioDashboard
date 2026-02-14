@@ -16,7 +16,8 @@ export default function GaugeConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const numericFields = Object.keys(colTypes).filter((f) => colTypes[f] === "number");
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
+  const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
   const updateStyle = (key, value) => updateWidgetConfig(widget.i, { style: { ...style, [key]: value } });
@@ -39,7 +40,7 @@ export default function GaugeConfig({ widget }) {
           </ConfigSection>
           {ds && (
             <ConfigSection label="Metric" icon="🎯">
-              <ConfigSelect label="Metric" badge="measure" value={config.metric} onChange={(v) => update("metric", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+              <ConfigSelect label="Metric" badge="measure" value={config.metric} onChange={(v) => update("metric", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
               <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
               <ConfigNumber label="Max Value" value={config.maxValue || 100} onChange={(v) => update("maxValue", v)} min={1} />
             </ConfigSection>
@@ -47,7 +48,7 @@ export default function GaugeConfig({ widget }) {
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">

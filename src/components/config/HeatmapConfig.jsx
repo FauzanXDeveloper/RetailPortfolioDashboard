@@ -16,7 +16,7 @@ export default function HeatmapConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -43,13 +43,13 @@ export default function HeatmapConfig({ widget }) {
             <ConfigSection label="Fields" icon="📐">
               <ConfigSelect label="X-Axis" badge="dimension" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
               <ConfigSelect label="Y-Axis" badge="dimension" value={config.yAxis} onChange={(v) => update("yAxis", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-              <ConfigSelect label="Value Field" badge="measure" value={config.valueField} onChange={(v) => update("valueField", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+              <ConfigSelect label="Value Field" badge="measure" value={config.valueField} onChange={(v) => update("valueField", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
             </ConfigSection>
           )}
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">

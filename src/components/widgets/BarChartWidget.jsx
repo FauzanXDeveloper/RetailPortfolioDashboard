@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, sortData, applyGlobalFilters, limitData, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
 
 export default function BarChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -187,6 +187,29 @@ export default function BarChartWidget({ widget }) {
           // Use per-series custom color, else palette color, else single barColor for 1-series
           const seriesColors = style.seriesColors || {};
           const seriesColor = seriesColors[key] || (barKeys.length > 1 ? getColor(idx) : (style.barColor || "#1a3ab5"));
+
+          // Pre-compute percentage map for this series
+          const percentMap = (() => {
+            if (!style.labelShowPercentage || !displayData) return null;
+            const map = {};
+            if (style.stacking) {
+              displayData.forEach((row) => {
+                const stackTotal = barKeys.reduce((sum, k) => sum + (Number(row[k]) || 0), 0);
+                const cat = row[config.xAxis];
+                map[`${key}::${cat}`] = stackTotal > 0 ? ((Number(row[key]) || 0) / stackTotal) * 100 : null;
+              });
+            } else {
+              const seriesTotal = displayData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+              displayData.forEach((row) => {
+                const cat = row[config.xAxis];
+                map[`${key}::${cat}`] = seriesTotal > 0 ? ((Number(row[key]) || 0) / seriesTotal) * 100 : null;
+              });
+            }
+            return map;
+          })();
+
+          const labelProps = buildLabelListProps(style, key, { seriesName: key, xAxisKey: config.xAxis, percentMap });
+
           return (
             <Bar
               key={key}
@@ -197,45 +220,7 @@ export default function BarChartWidget({ widget }) {
               barSize={style.barWidth || undefined}
               stackId={style.stacking ? "stack" : undefined}
             >
-              {style.showDataLabels && (
-                <LabelList
-                  dataKey={key}
-                  position={style.dataLabelPosition || "top"}
-                  style={buildDataLabelStyle(style)}
-                  angle={style.dataLabelRotation || 0}
-                  formatter={(v, name, props) => {
-                    let percent = null;
-                    
-                    // Calculate percentage based on chart type
-                    if (style.labelShowPercentage && displayData && v != null) {
-                      if (style.stacking) {
-                        // Stacked chart: percentage of stack total for this category
-                        const rowData = displayData.find(row => row[config.xAxis] === props.payload[config.xAxis]);
-                        if (rowData) {
-                          const stackTotal = barKeys.reduce((sum, k) => sum + (Number(rowData[k]) || 0), 0);
-                          if (stackTotal > 0) {
-                            percent = (v / stackTotal) * 100;
-                          }
-                        }
-                      } else {
-                        // Single/grouped chart: percentage of total for this series across all categories
-                        const seriesTotal = displayData.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
-                        if (seriesTotal > 0) {
-                          percent = (v / seriesTotal) * 100;
-                        }
-                      }
-                    }
-                    
-                    return buildDataLabelContent({ 
-                      value: v, 
-                      seriesName: key, 
-                      category: props.payload[config.xAxis],
-                      percent, 
-                      style 
-                    });
-                  }}
-                />
-              )}
+              {labelProps && <LabelList {...labelProps} />}
             </Bar>
           );
         })}

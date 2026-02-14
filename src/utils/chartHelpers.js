@@ -150,8 +150,12 @@ export function buildDataLabelContent({ value, category, percent, seriesName, st
   const parts = [];
   const sep = SEPARATOR_MAP[style.labelSeparator || "newline"] || "\n";
 
-  // Default: show value if no explicit selection
-  const showValue = style.labelShowValue !== undefined ? style.labelShowValue : true;
+  // If user has explicitly configured any label option, respect their choices.
+  // Only fall back to showing value if no label options have been set at all.
+  const hasExplicitConfig = style.labelShowValue !== undefined ||
+    style.labelShowCategory || style.labelShowPercentage || style.labelShowSeriesName;
+
+  const showValue = hasExplicitConfig ? (style.labelShowValue || false) : true;
   const showCategory = style.labelShowCategory || false;
   const showPercentage = style.labelShowPercentage || false;
   const showSeriesName = style.labelShowSeriesName || false;
@@ -161,18 +165,33 @@ export function buildDataLabelContent({ value, category, percent, seriesName, st
   if (showValue && value != null) parts.push(formatNumber(value, style));
   if (showPercentage && percent != null) parts.push(percent.toFixed(1) + "%");
 
+  // If user explicitly turned off everything, return empty string
+  if (hasExplicitConfig && parts.length === 0) return "";
+
   return parts.length > 0 ? parts.join(sep) : formatNumber(value, style);
 }
 
 /**
  * Custom SVG label renderer for Recharts LabelList.
  * Handles newline separator by rendering <tspan> elements.
+ * Supports category, seriesName, percent via extra props.
  */
 export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored, ...rest }) {
-  // `rest` may have labelStyle injected by buildLabelListProps
   const labelStyle = rest.labelStyle || {};
   const widgetStyle = rest.widgetStyle || {};
-  const text = buildDataLabelContent({ value, style: widgetStyle });
+  const seriesName = rest.seriesName;
+  const xAxisKey = rest.xAxisKey;
+  const percentMap = rest.percentMap;
+  const payload = rest.payload || rest;
+  const category = xAxisKey && payload ? payload[xAxisKey] : undefined;
+  // Compute percent from percentMap if provided
+  let percent = null;
+  if (percentMap && payload && xAxisKey) {
+    const mapKey = `${seriesName || rest.dataKey}::${payload[xAxisKey]}`;
+    percent = percentMap[mapKey] ?? null;
+  }
+
+  const text = buildDataLabelContent({ value, category, seriesName, percent, style: widgetStyle });
   const lines = text.split("\n");
   const fontSize = labelStyle.fontSize || 10;
 
@@ -200,26 +219,48 @@ export function renderSvgDataLabel({ x, y, value, width, height, style: _ignored
  * Build LabelList props for Recharts Bar/Line/Area charts.
  * Returns null if labels are disabled.
  * Uses custom SVG renderer for newline separator support.
+ * @param {object} style - widget style config
+ * @param {string} dataKey - the data key for LabelList
+ * @param {object} [extra] - { seriesName, xAxisKey, percentMap, chartData }
  */
-export function buildLabelListProps(style = {}, dataKey) {
+export function buildLabelListProps(style = {}, dataKey, extra = {}) {
   if (!style.showDataLabels) return null;
   const lStyle = buildDataLabelStyle(style);
   const sep = style.labelSeparator || "newline";
+  const { seriesName, xAxisKey, percentMap } = extra;
 
-  // For newline separator, we need a custom SVG content renderer
+  // Always use custom SVG content renderer for proper newline + percent + category support
   if (sep === "newline") {
     return {
       dataKey,
       position: style.dataLabelPosition || "top",
-      content: (props) => renderSvgDataLabel({ ...props, labelStyle: lStyle, widgetStyle: style }),
+      content: (props) => renderSvgDataLabel({
+        ...props,
+        labelStyle: lStyle,
+        widgetStyle: style,
+        seriesName,
+        xAxisKey,
+        percentMap,
+      }),
     };
   }
+
+  // Non-newline separators: use formatter (no SVG tspan needed)
   return {
     dataKey,
     position: style.dataLabelPosition || "top",
     style: lStyle,
     angle: style.dataLabelRotation || 0,
-    formatter: (v) => buildDataLabelContent({ value: v, style }),
+    formatter: (v, entry) => {
+      const payload = entry?.payload || entry || {};
+      const category = xAxisKey ? payload[xAxisKey] : undefined;
+      let percent = null;
+      if (percentMap) {
+        const mapKey = `${seriesName || dataKey}::${category}`;
+        percent = percentMap[mapKey] ?? null;
+      }
+      return buildDataLabelContent({ value: v, category, seriesName, percent, style });
+    },
   };
 }
 

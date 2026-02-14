@@ -16,7 +16,7 @@ export default function DimensionMeasureConfig({ widget, extraDataFields, extraS
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -43,7 +43,7 @@ export default function DimensionMeasureConfig({ widget, extraDataFields, extraS
             <>
               <ConfigSection label="Fields" icon="📐">
                 <ConfigSelect label="Dimension" badge="dimension" value={config.dimension} onChange={(v) => update("dimension", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-                <ConfigSelect label="Measure" badge="measure" value={config.measure} onChange={(v) => update("measure", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
+                <ConfigSelect label="Measure" badge="measure" value={config.measure} onChange={(v) => update("measure", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
               </ConfigSection>
               <ConfigSection label="Aggregation" icon="⚡" collapsible defaultOpen={false}>
                 <AggregationPills value={config.aggregation} onChange={(v) => update("aggregation", v)} />
@@ -54,7 +54,7 @@ export default function DimensionMeasureConfig({ widget, extraDataFields, extraS
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">

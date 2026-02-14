@@ -16,7 +16,7 @@ export default function RadarConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -55,10 +55,10 @@ export default function RadarConfig({ widget }) {
                 <div>
                   <label className="block text-[11px] font-medium text-gray-600 mb-1">Measures <span className="ml-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-emerald-100 text-emerald-700">multi-select</span></label>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {numericFields.map((f) => (
+                    {allFields.map((f) => (
                       <label key={f} className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg cursor-pointer transition-all ${(config.measures || []).includes(f) ? "bg-brand-100 text-brand-700 border border-brand-300" : "bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200"}`}>
                         <input type="checkbox" checked={(config.measures || []).includes(f)} onChange={() => toggleMeasure(f)} className="sr-only" />
-                        {f}
+                        {f} <span className="text-[9px] text-gray-400">({colTypes[f]})</span>
                       </label>
                     ))}
                   </div>
@@ -72,7 +72,7 @@ export default function RadarConfig({ widget }) {
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">

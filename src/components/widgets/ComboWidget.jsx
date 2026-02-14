@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildDataLabelContent } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildDataLabelStyle } from "../../utils/chartHelpers";
 
 export default function ComboWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -56,71 +56,51 @@ export default function ComboWidget({ widget }) {
         )}
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />}
-        <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600}>
-          {style.showDataLabels && (
-            <LabelList
-              dataKey={config.barMeasure}
-              position={style.dataLabelPosition || "top"}
-              style={buildDataLabelStyle(style)}
-              angle={style.dataLabelRotation || 0}
-              formatter={(v, name, props) => {
-                let percent = null;
-                
-                // Calculate percentage for combo chart bar component
-                if (style.labelShowPercentage && chartData && v != null) {
-                  // Percentage of total for bar measure across all data points
-                  const barTotal = chartData.reduce((sum, row) => sum + (Number(row[config.barMeasure]) || 0), 0);
-                  if (barTotal > 0) {
-                    percent = (v / barTotal) * 100;
-                  }
-                }
-                
-                return buildDataLabelContent({ 
-                  value: v, 
-                  seriesName: config.barMeasure,
-                  category: props?.payload?.[config.xAxis],
-                  percent, 
-                  style 
-                });
-              }}
+        {(() => {
+          // Pre-compute percentage map for bar measure
+          const barPercentMap = (() => {
+            if (!style.labelShowPercentage || !chartData) return null;
+            const map = {};
+            const barTotal = chartData.reduce((sum, row) => sum + (Number(row[config.barMeasure]) || 0), 0);
+            chartData.forEach((row) => {
+              const cat = row[config.xAxis];
+              map[`${config.barMeasure}::${cat}`] = barTotal > 0 ? ((Number(row[config.barMeasure]) || 0) / barTotal) * 100 : null;
+            });
+            return map;
+          })();
+          const barLabelProps = buildLabelListProps(style, config.barMeasure, { seriesName: config.barMeasure, xAxisKey: config.xAxis, percentMap: barPercentMap });
+          return (
+            <Bar yAxisId="left" dataKey={config.barMeasure} fill={style.barColor || getColor(0)} radius={[4, 4, 0, 0]} animationDuration={600}>
+              {barLabelProps && <LabelList {...barLabelProps} />}
+            </Bar>
+          );
+        })()}
+        {config.lineMeasure && (() => {
+          // Pre-compute percentage map for line measure
+          const linePercentMap = (() => {
+            if (!style.labelShowPercentage || !chartData) return null;
+            const map = {};
+            const lineTotal = chartData.reduce((sum, row) => sum + (Number(row[config.lineMeasure]) || 0), 0);
+            chartData.forEach((row) => {
+              const cat = row[config.xAxis];
+              map[`${config.lineMeasure}::${cat}`] = lineTotal > 0 ? ((Number(row[config.lineMeasure]) || 0) / lineTotal) * 100 : null;
+            });
+            return map;
+          })();
+          const lineLabelProps = buildLabelListProps(style, config.lineMeasure, { seriesName: config.lineMeasure, xAxisKey: config.xAxis, percentMap: linePercentMap });
+          return (
+            <Line
+              yAxisId={config.lineMeasure !== config.barMeasure ? "right" : "left"}
+              type="monotone"
+              dataKey={config.lineMeasure}
+              stroke={style.lineColor || getColor(1)}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              animationDuration={600}
+              label={lineLabelProps || false}
             />
-          )}
-        </Bar>
-        {config.lineMeasure && (
-          <Line
-            yAxisId={config.lineMeasure !== config.barMeasure ? "right" : "left"}
-            type="monotone"
-            dataKey={config.lineMeasure}
-            stroke={style.lineColor || getColor(1)}
-            strokeWidth={2}
-            dot={{ r: 3 }}
-            animationDuration={600}
-            label={style.showDataLabels ? {
-              position: style.dataLabelPosition || "top",
-              ...buildDataLabelStyle(style),
-              formatter: (v, name, props) => {
-                let percent = null;
-                
-                // Calculate percentage for combo chart line component
-                if (style.labelShowPercentage && chartData && v != null && config.lineMeasure) {
-                  // Percentage of total for line measure across all data points
-                  const lineTotal = chartData.reduce((sum, row) => sum + (Number(row[config.lineMeasure]) || 0), 0);
-                  if (lineTotal > 0) {
-                    percent = (v / lineTotal) * 100;
-                  }
-                }
-                
-                return buildDataLabelContent({ 
-                  value: v, 
-                  seriesName: config.lineMeasure,
-                  category: props?.payload?.[config.xAxis],
-                  percent, 
-                  style 
-                });
-              },
-            } : false}
-          />
-        )}
+          );
+        })()}
       </ComposedChart>
     </ResponsiveContainer>
   );

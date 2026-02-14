@@ -18,7 +18,7 @@ export default function LineChartConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
   const textFields = allFields.filter((f) => colTypes[f] !== "number");
 
@@ -73,7 +73,7 @@ export default function LineChartConfig({ widget }) {
                   badge="measure"
                   value={config.yAxis}
                   onChange={(v) => update("yAxis", v)}
-                  options={numericFields.map((f) => ({ value: f, label: f }))}
+                  options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))}
                   placeholder="Select field..."
                 />
                 <div>
@@ -88,7 +88,7 @@ export default function LineChartConfig({ widget }) {
                         lines[idx] = e.target.value;
                         update("additionalLines", lines);
                       }}>
-                        {numericFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                        {allFields.map((f) => <option key={f} value={f}>{f} ({colTypes[f]})</option>)}
                       </select>
                       <button className="text-red-400 hover:text-red-600 text-xs px-1 rounded hover:bg-red-50" onClick={() => {
                         const lines = (config.additionalLines || []).filter((_, i) => i !== idx);
@@ -97,7 +97,7 @@ export default function LineChartConfig({ widget }) {
                     </div>
                   ))}
                   <button className="text-[10px] text-brand-600 hover:text-brand-800 font-medium" onClick={() => {
-                    update("additionalLines", [...(config.additionalLines || []), numericFields[0] || ""]);
+                    update("additionalLines", [...(config.additionalLines || []), allFields[0] || ""]);
                   }}>+ Add Line</button>
                 </div>
                 <ConfigSelect

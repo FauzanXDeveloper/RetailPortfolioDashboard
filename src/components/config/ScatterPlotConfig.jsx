@@ -16,7 +16,7 @@ export default function ScatterPlotConfig({ widget }) {
 
   const ds = dataSources.find((d) => d.id === config.dataSource);
   const colTypes = ds ? detectColumnTypes(ds.data) : {};
-  const allFields = Object.keys(colTypes);
+  const allFields = Object.keys(colTypes).sort((a, b) => a.localeCompare(b));
   const numericFields = allFields.filter((f) => colTypes[f] === "number");
 
   const update = (key, value) => updateWidgetConfig(widget.i, { [key]: value });
@@ -41,16 +41,16 @@ export default function ScatterPlotConfig({ widget }) {
           </ConfigSection>
           {ds && (
             <ConfigSection label="Fields" icon="📐">
-              <ConfigSelect label="X-Axis" badge="measure" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-              <ConfigSelect label="Y-Axis" badge="measure" value={config.yAxis} onChange={(v) => update("yAxis", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="Select field..." />
-              <ConfigSelect label="Size Field" badge="optional" value={config.sizeField} onChange={(v) => update("sizeField", v)} options={numericFields.map((f) => ({ value: f, label: f }))} placeholder="None" />
+              <ConfigSelect label="X-Axis" badge="measure" value={config.xAxis} onChange={(v) => update("xAxis", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
+              <ConfigSelect label="Y-Axis" badge="measure" value={config.yAxis} onChange={(v) => update("yAxis", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="Select field..." />
+              <ConfigSelect label="Size Field" badge="optional" value={config.sizeField} onChange={(v) => update("sizeField", v)} options={allFields.map((f) => ({ value: f, label: `${f} (${colTypes[f]})` }))} placeholder="None" />
               <ConfigSelect label="Color By (Group)" badge="optional" value={config.colorBy} onChange={(v) => update("colorBy", v)} options={allFields.map((f) => ({ value: f, label: f }))} placeholder="None" />
             </ConfigSection>
           )}
         </div>
       )}
 
-      {tab === "filters" && <FilterConfig widget={widget} />}
+      {tab === "filters" && <FilterConfig widget={widget} fields={allFields} colTypes={colTypes} dataSource={ds} />}
 
       {tab === "style" && (
         <div className="space-y-3">
