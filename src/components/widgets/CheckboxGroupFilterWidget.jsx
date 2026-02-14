@@ -28,10 +28,12 @@ export default function CheckboxGroupFilterWidget({ widget }) {
 
   const clearAll = () => setWidgetFilterValue(widget.i, []);
 
+  const style = config.style || {};
+
   return (
     <div className="flex flex-col h-full px-2 py-1 overflow-hidden">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-gray-600">{config.filterName || config.filterField}</span>
+        <span className="text-xs font-medium" style={{ color: style.textColor || style.axisColor || '#6b7280' }}>{config.filterName || config.filterField}</span>
         <button onClick={clearAll} className="text-[10px] text-indigo-600 hover:text-indigo-700">Clear</button>
       </div>
       <div className="flex-1 overflow-y-auto space-y-0.5">
@@ -43,7 +45,7 @@ export default function CheckboxGroupFilterWidget({ widget }) {
               onChange={() => toggle(opt)}
               className="rounded text-indigo-600"
             />
-            <span className="truncate">{opt}</span>
+            <span className="truncate" style={{ color: style.textColor || undefined }}>{opt}</span>
           </label>
         ))}
       </div>

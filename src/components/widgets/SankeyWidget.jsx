@@ -102,6 +102,8 @@ export default function SankeyWidget({ widget }) {
     });
   });
 
+  const style = config.style || {};
+
   return (
     <div ref={containerRef} className="w-full h-full">
       <svg width={dims.w} height={dims.h}>
@@ -140,7 +142,7 @@ export default function SankeyWidget({ widget }) {
               textAnchor={pos.x < dims.w / 2 ? "start" : "end"}
               dominantBaseline="central"
               fontSize={10}
-              fill="#374151"
+              fill={style.textColor || style.axisColor || "#374151"}
             >
               {name}
             </text>

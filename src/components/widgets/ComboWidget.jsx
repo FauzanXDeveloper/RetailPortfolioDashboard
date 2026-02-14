@@ -49,10 +49,10 @@ export default function ComboWidget({ widget }) {
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={chartData} margin={buildChartMargin(style, { top: 10 })}>
         {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke={style.gridColor || "#e5e7eb"} />}
-        <XAxis dataKey={config.xAxis} tick={{ fontSize: 11 }} />
-        <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
+        <XAxis dataKey={config.xAxis} tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} />
+        <YAxis yAxisId="left" tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} tickFormatter={(v) => formatNumber(v, style)} />
         {config.lineMeasure && config.lineMeasure !== config.barMeasure && (
-          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
+          <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} tickFormatter={(v) => formatNumber(v, style)} />
         )}
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && <Legend {...buildLegendProps(style)} />}

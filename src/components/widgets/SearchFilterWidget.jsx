@@ -29,7 +29,7 @@ export default function SearchFilterWidget({ widget }) {
 
   return (
     <div className="flex items-center h-full px-2 gap-2">
-      <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+      <span className="text-xs font-medium whitespace-nowrap" style={{ color: config.style?.textColor || '#6b7280' }}>
         {config.filterName || "Search"}:
       </span>
       <div className="relative flex-1">

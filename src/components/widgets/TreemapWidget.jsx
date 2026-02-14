@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import { ResponsiveContainer, Treemap, Tooltip } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, buildTooltipStyle, formatNumber } from "../../utils/chartHelpers";
 
 const CustomContent = ({ x, y, width, height, name, value, index }) => {
   if (width < 30 || height < 20) return null;
@@ -62,8 +62,8 @@ export default function TreemapWidget({ widget }) {
         animationDuration={600}
       >
         <Tooltip
-          contentStyle={{ fontSize: 12, borderRadius: 8 }}
-          formatter={(v) => Number(v).toLocaleString()}
+          contentStyle={buildTooltipStyle(config.style || {})}
+          formatter={(v) => formatNumber(v, config.style || {})}
         />
       </Treemap>
     </ResponsiveContainer>

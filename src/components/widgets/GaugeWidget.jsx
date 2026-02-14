@@ -53,11 +53,11 @@ export default function GaugeWidget({ widget }) {
         hollow: { size: "60%" },
         track: { background: "#e5e7eb", strokeWidth: "100%" },
         dataLabels: {
-          name: { fontSize: "12px", color: "#6b7280", offsetY: -10 },
+          name: { fontSize: "12px", color: style.axisColor || "#6b7280", offsetY: -10 },
           value: {
             fontSize: "24px",
             fontWeight: 700,
-            color: "#111827",
+            color: style.textColor || "#111827",
             formatter: () => Number(value).toLocaleString(),
           },
         },

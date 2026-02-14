@@ -119,7 +119,7 @@ export default function Canvas() {
           onLayoutChange={handleLayoutChange}
           draggableHandle=".drag-handle"
           resizeHandles={["se"]}
-          compactType="vertical"
+          compactType={null}
           preventCollision={false}
           margin={[12, 12]}
           containerPadding={[0, 0]}

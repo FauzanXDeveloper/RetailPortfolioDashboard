@@ -45,9 +45,10 @@ export default function HeatmapWidget({ widget }) {
 
   const options = {
     chart: { type: "heatmap", toolbar: { show: false } },
-    dataLabels: { enabled: style.showDataLabels !== false, style: { fontSize: "10px" } },
+    dataLabels: { enabled: style.showDataLabels !== false, style: { fontSize: "10px", colors: [style.dataLabelColor || "#374151"] } },
     colors: [style.color || "#4F46E5"],
-    xaxis: { categories, labels: { style: { fontSize: "10px" } } },
+    xaxis: { categories, labels: { style: { fontSize: "10px", colors: [style.axisColor || "#6b7280"] } } },
+    yaxis: { labels: { style: { fontSize: "10px", colors: [style.axisColor || "#6b7280"] } } },
     plotOptions: { heatmap: { radius: 2, shadeIntensity: 0.5 } },
     tooltip: { style: { fontSize: "11px" } },
   };

@@ -63,6 +63,7 @@ export default function MultiSelectFilterWidget({ widget }) {
     setOpen(!open);
   };
 
+  const style = config.style || {};
   const filtered = options.filter((o) => String(o).toLowerCase().includes(search.toLowerCase()));
 
   const dropdownContent = open && createPortal(
@@ -110,6 +111,7 @@ export default function MultiSelectFilterWidget({ widget }) {
         <div
           ref={triggerRef}
           className="flex flex-wrap gap-1 min-h-[28px] border border-gray-200 rounded-md px-2 py-1 cursor-pointer bg-white hover:border-indigo-300 transition-colors"
+          style={{ color: style.textColor || undefined }}
           onClick={handleOpenDropdown}
         >
           {selected.length === 0 && <span className="text-xs text-gray-400">All</span>}

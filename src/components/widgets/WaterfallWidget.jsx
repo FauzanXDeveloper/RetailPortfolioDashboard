@@ -4,11 +4,11 @@
 import React, { useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine,
+  ResponsiveContainer, Cell, ReferenceLine, LabelList,
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { buildChartMargin } from "../../utils/chartHelpers";
+import { buildChartMargin, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
 
 export default function WaterfallWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -63,14 +63,14 @@ export default function WaterfallWidget({ widget }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} margin={buildChartMargin(style, { top: 10 })}>
-        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
+        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke={style.gridColor || "#e5e7eb"} />}
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} />
+        <YAxis tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} tickFormatter={(v) => formatNumber(v, style)} />
         <Tooltip
-          contentStyle={{ fontSize: 12, borderRadius: 8 }}
+          contentStyle={buildTooltipStyle(style)}
           formatter={(value, name) => {
             if (name === "base") return null;
-            return [Number(value).toLocaleString(), "Value"];
+            return [formatNumber(value, style), "Value"];
           }}
         />
         <ReferenceLine y={0} stroke="#9ca3af" />
@@ -78,12 +78,27 @@ export default function WaterfallWidget({ widget }) {
         <Bar dataKey="base" stackId="waterfall" fill="transparent" />
         {/* Visible value bar */}
         <Bar dataKey="display" stackId="waterfall" radius={[3, 3, 0, 0]} animationDuration={600}>
-          {chartData.map((entry, idx) => (
-            <Cell
-              key={idx}
-              fill={entry.isTotal ? (style.totalColor || "#6366F1") : entry.isPositive ? (style.positiveColor || "#10B981") : (style.negativeColor || "#EF4444")}
-            />
-          ))}
+          {(() => {
+            // Pre-compute percentage map for waterfall
+            const absTotal = chartData.filter(e => !e.isTotal).reduce((sum, e) => sum + Math.abs(e.value || 0), 0);
+            const percentMap = {};
+            chartData.forEach((entry) => {
+              const pct = absTotal > 0 ? (Math.abs(entry.value || 0) / absTotal) * 100 : null;
+              percentMap[`display::${entry.name}`] = pct;
+            });
+            const labelProps = buildLabelListProps(style, "display", { seriesName: null, xAxisKey: "name", percentMap });
+            return (
+              <>
+                {chartData.map((entry, idx) => (
+                  <Cell
+                    key={idx}
+                    fill={entry.isTotal ? (style.totalColor || "#6366F1") : entry.isPositive ? (style.positiveColor || "#10B981") : (style.negativeColor || "#EF4444")}
+                  />
+                ))}
+                {labelProps && <LabelList {...labelProps} />}
+              </>
+            );
+          })()}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

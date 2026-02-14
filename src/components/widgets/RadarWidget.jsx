@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
+import { getColor, buildChartMargin, buildLegendProps, buildTooltipStyle } from "../../utils/chartHelpers";
 
 export default function RadarWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -46,10 +46,10 @@ export default function RadarWidget({ widget }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RadarChart data={chartData} margin={buildChartMargin(style, { top: 10, right: 30, left: 30, bottom: 10 })}>
-        <PolarGrid stroke="#e5e7eb" />
-        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-        <PolarRadiusAxis tick={{ fontSize: 9 }} />
-        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+        <PolarGrid stroke={style.gridColor || "#e5e7eb"} />
+        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: style.axisColor || "#6b7280" }} />
+        <PolarRadiusAxis tick={{ fontSize: 9, fill: style.axisColor || "#6b7280" }} />
+        <Tooltip contentStyle={buildTooltipStyle(style)} />
         {style.showLegend !== false && seriesKeys.length > 1 && <Legend {...buildLegendProps(style)} />}
         {seriesKeys.map((key, idx) => (
           <Radar

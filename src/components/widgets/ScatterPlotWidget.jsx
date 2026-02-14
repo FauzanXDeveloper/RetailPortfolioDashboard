@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
+import { getColor, buildChartMargin, buildLegendProps, buildTooltipStyle } from "../../utils/chartHelpers";
 
 export default function ScatterPlotWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -58,11 +58,11 @@ export default function ScatterPlotWidget({ widget }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ScatterChart margin={buildChartMargin(style, { top: 10 })}>
-        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis type="number" dataKey="x" name={config.xAxis} tick={{ fontSize: 11 }} />
-        <YAxis type="number" dataKey="y" name={config.yAxis} tick={{ fontSize: 11 }} />
+        {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke={style.gridColor || "#e5e7eb"} />}
+        <XAxis type="number" dataKey="x" name={config.xAxis} tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} />
+        <YAxis type="number" dataKey="y" name={config.yAxis} tick={{ fontSize: 11, fill: style.axisColor || "#6b7280" }} />
         <ZAxis type="number" dataKey="z" range={[40, 400]} />
-        <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+        <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={buildTooltipStyle(style)} />
         {style.showLegend !== false && groups.length > 1 && <Legend {...buildLegendProps(style)} />}
         {groups.map(([name, data], idx) => (
           <Scatter key={name} name={name} data={data} fill={getColor(idx)} fillOpacity={0.7} />

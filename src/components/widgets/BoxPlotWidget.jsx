@@ -75,8 +75,8 @@ export default function BoxPlotWidget({ widget }) {
         },
       },
     },
-    xaxis: { labels: { style: { fontSize: "10px" } } },
-    yaxis: { labels: { style: { fontSize: "10px" } } },
+    xaxis: { labels: { style: { fontSize: "10px", colors: [style.axisColor || "#6b7280"] } } },
+    yaxis: { labels: { style: { fontSize: "10px", colors: [style.axisColor || "#6b7280"] } } },
     tooltip: { style: { fontSize: "11px" } },
   };
 

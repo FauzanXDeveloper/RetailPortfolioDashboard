@@ -24,6 +24,8 @@ export default function RangeSliderFilterWidget({ widget }) {
     setLocalMax(current.max ?? max);
   }, [current.min, current.max, min, max]);
 
+  const style = config.style || {};
+
   if (!config.dataSource || !config.filterField) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-xs">Configure filter</div>;
   }
@@ -36,7 +38,7 @@ export default function RangeSliderFilterWidget({ widget }) {
 
   return (
     <div className="flex flex-col h-full px-2 py-1 justify-center">
-      <span className="text-xs font-medium text-gray-600 mb-1">{config.filterName || config.filterField}</span>
+      <span className="text-xs font-medium mb-1" style={{ color: style.textColor || style.axisColor || '#6b7280' }}>{config.filterName || config.filterField}</span>
       <div className="flex items-center gap-2">
         <input
           type="number"

@@ -31,9 +31,11 @@ export default function DateRangeFilterWidget({ widget }) {
     setWidgetFilterValue(widget.i, { preset: key, ...range });
   };
 
+  const style = config.style || {};
+
   return (
     <div className="flex items-center gap-2 h-full px-1 flex-wrap">
-      <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+      <span className="text-xs font-medium whitespace-nowrap" style={{ color: style.textColor || style.axisColor || '#6b7280' }}>
         {config.filterName || "Date Range"}:
       </span>
       <select

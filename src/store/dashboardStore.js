@@ -330,18 +330,55 @@ const useDashboardStore = create((set, get) => {
     const size = getDefaultWidgetSize(type);
     const config = getDefaultWidgetConfig(type);
 
-    // Find the lowest available y position
+    // Find the first available gap in the grid
     const state = get();
     const widgets = state.currentDashboard.widgets;
-    let y = 0;
-    if (widgets.length > 0) {
-      y = Math.max(...widgets.map((w) => (w.y || 0) + (w.h || 2)));
+    let placeX = 0;
+    let placeY = 0;
+
+    if (position) {
+      placeX = position.x;
+      placeY = position.y;
+    } else if (widgets.length > 0) {
+      // Build an occupancy grid to find the first gap
+      const cols = 12;
+      const maxY = Math.max(...widgets.map((w) => (w.y || 0) + (w.h || 2))) + size.h + 2;
+      const occupied = Array.from({ length: maxY }, () => new Array(cols).fill(false));
+      widgets.forEach((w) => {
+        const wx = w.x || 0, wy = w.y || 0, ww = w.w || 4, wh = w.h || 2;
+        for (let r = wy; r < wy + wh && r < maxY; r++) {
+          for (let c = wx; c < wx + ww && c < cols; c++) {
+            occupied[r][c] = true;
+          }
+        }
+      });
+      // Scan row-by-row, left-to-right for a gap that fits the new widget
+      let found = false;
+      for (let r = 0; r < maxY && !found; r++) {
+        for (let c = 0; c <= cols - size.w && !found; c++) {
+          let fits = true;
+          for (let dr = 0; dr < size.h && fits; dr++) {
+            for (let dc = 0; dc < size.w && fits; dc++) {
+              if (r + dr < maxY && occupied[r + dr][c + dc]) fits = false;
+            }
+          }
+          if (fits) {
+            placeX = c;
+            placeY = r;
+            found = true;
+          }
+        }
+      }
+      if (!found) {
+        placeX = 0;
+        placeY = maxY;
+      }
     }
 
     const widget = {
       i: id,
-      x: position?.x ?? 0,
-      y: position?.y ?? y,
+      x: placeX,
+      y: placeY,
       w: size.w,
       h: size.h,
       type,

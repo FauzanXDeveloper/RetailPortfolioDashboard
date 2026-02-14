@@ -34,13 +34,16 @@ export default function DropdownFilterWidget({ widget }) {
     }
   };
 
+  const style = config.style || {};
+
   return (
     <div className="flex items-center gap-2 h-full px-1">
-      <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+      <span className="text-xs font-medium whitespace-nowrap" style={{ color: style.textColor || style.axisColor || '#6b7280' }}>
         {config.filterName || config.filterField}:
       </span>
       <select
         className="flex-1 text-xs border border-gray-200 rounded-md px-2 py-1 outline-none focus:border-indigo-400 bg-white"
+        style={{ color: style.textColor || undefined }}
         value={currentValue}
         onChange={handleChange}
         multiple={config.type === "multi"}
