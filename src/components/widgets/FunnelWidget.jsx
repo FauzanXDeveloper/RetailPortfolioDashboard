@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import { ResponsiveContainer, Tooltip, Funnel, FunnelChart, LabelList, Cell } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor } from "../../utils/chartHelpers";
+import { getColor, buildChartMargin } from "../../utils/chartHelpers";
 
 export default function FunnelWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -36,7 +36,7 @@ export default function FunnelWidget({ widget }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <FunnelChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+      <FunnelChart margin={buildChartMargin(style, { top: 10, right: 10, left: 10, bottom: 10 })}>
         <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => Number(v).toLocaleString()} />
         <Funnel dataKey="value" data={chartData} isAnimationActive animationDuration={600}>
           {style.showLabels !== false && <LabelList position="center" fill="#fff" stroke="none" style={{ fontSize: 11, fontWeight: 600 }} dataKey="name" />}

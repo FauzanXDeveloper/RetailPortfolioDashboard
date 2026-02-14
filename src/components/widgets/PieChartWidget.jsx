@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildDataLabelStyle, buildLegendProps } from "../../utils/chartHelpers";
 
 const RADIAN = Math.PI / 180;
 
@@ -209,12 +209,7 @@ export default function PieChartWidget({ widget }) {
           }}
         />
         {style.showLegend !== false && (
-          <Legend
-            wrapperStyle={{ fontSize: (pieLabelStyle.fontSize || 11) - 1 }}
-            verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
-            align={style.legendPosition === "left" ? "left" : style.legendPosition === "right" ? "right" : "center"}
-            layout={style.legendLayout || "horizontal"}
-          />
+          <Legend {...buildLegendProps(style, pieLabelStyle.fontSize || 11)} />
         )}
       </PieChart>
     </ResponsiveContainer>

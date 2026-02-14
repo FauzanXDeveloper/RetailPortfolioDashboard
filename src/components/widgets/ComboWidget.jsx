@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildDataLabelStyle } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
 
 export default function ComboWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -47,7 +47,7 @@ export default function ComboWidget({ widget }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+      <ComposedChart data={chartData} margin={buildChartMargin(style, { top: 10 })}>
         {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke={style.gridColor || "#e5e7eb"} />}
         <XAxis dataKey={config.xAxis} tick={{ fontSize: 11 }} />
         <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
@@ -55,7 +55,7 @@ export default function ComboWidget({ widget }) {
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(v, style)} />
         )}
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
-        {style.showLegend !== false && <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />}
+        {style.showLegend !== false && <Legend {...buildLegendProps(style)} />}
         {(() => {
           // Pre-compute percentage map for bar measure
           const barPercentMap = (() => {

@@ -99,6 +99,52 @@ export function buildTooltipStyle(style = {}) {
 }
 
 /**
+ * Build chart margin object from style config.
+ * All chart widgets should use this for consistent margin support.
+ */
+export function buildChartMargin(style = {}, defaults = {}) {
+  return {
+    top: style.marginTop ?? defaults.top ?? 5,
+    right: style.marginRight ?? defaults.right ?? 20,
+    bottom: style.marginBottom ?? defaults.bottom ?? 5,
+    left: style.marginLeft ?? defaults.left ?? 10,
+  };
+}
+
+/**
+ * Build Recharts Legend props from style config.
+ * Supports top/bottom/left/right positioning.
+ * Left/Right use vertical layout + align prop.
+ */
+export function buildLegendProps(style = {}, fontSize = 11) {
+  const pos = style.legendPosition || "bottom";
+  const layout = style.legendLayout || (pos === "left" || pos === "right" ? "vertical" : "horizontal");
+
+  const props = {
+    wrapperStyle: { fontSize: fontSize - 1 },
+    layout,
+  };
+
+  if (pos === "top") {
+    props.verticalAlign = "top";
+    props.align = "center";
+  } else if (pos === "bottom") {
+    props.verticalAlign = "bottom";
+    props.align = "center";
+  } else if (pos === "right") {
+    props.verticalAlign = "middle";
+    props.align = "right";
+    props.layout = "vertical";
+  } else if (pos === "left") {
+    props.verticalAlign = "middle";
+    props.align = "left";
+    props.layout = "vertical";
+  }
+
+  return props;
+}
+
+/**
  * Font family map for data labels.
  */
 const LABEL_FONT_MAP = {

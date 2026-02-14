@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, sortData, applyGlobalFilters, limitData, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
 
 export default function BarChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -123,12 +123,7 @@ export default function BarChartWidget({ widget }) {
       <BarChart
         data={displayData}
         layout={isHorizontal ? "vertical" : "horizontal"}
-        margin={{
-          top: style.marginTop ?? 5,
-          right: style.marginRight ?? 20,
-          left: style.marginLeft ?? 10,
-          bottom: labelAngle !== 0 ? 40 : (style.marginBottom ?? 5),
-        }}
+        margin={{ ...buildChartMargin(style), bottom: labelAngle !== 0 ? 40 : (style.marginBottom ?? 5) }}
       >
         {style.showGridLines !== false && (
           <CartesianGrid
@@ -176,12 +171,7 @@ export default function BarChartWidget({ widget }) {
           formatter={(value) => style.stackPercent ? `${Number(value).toFixed(1)}%` : formatNumber(value, style)}
         />
         {style.showLegend !== false && barKeys.length > 1 && (
-          <Legend
-            wrapperStyle={{ fontSize: fontSize - 1 }}
-            verticalAlign={style.legendPosition === "top" ? "top" : "bottom"}
-            align={style.legendAlign || "center"}
-            layout={style.legendLayout || "horizontal"}
-          />
+          <Legend {...buildLegendProps(style, fontSize)} />
         )}
         {barKeys.map((key, idx) => {
           // Use per-series custom color, else palette color, else single barColor for 1-series

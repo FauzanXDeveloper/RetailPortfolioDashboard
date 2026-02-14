@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
 
 export default function LineChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -83,7 +83,7 @@ export default function LineChartWidget({ widget }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={chartData} margin={{ top: 5, right: isSparkline ? 5 : 20, left: isSparkline ? 5 : 10, bottom: labelAngle !== 0 ? 40 : 5 }}>
+      <LineChart data={chartData} margin={isSparkline ? { top: 5, right: 5, left: 5, bottom: 5 } : { ...buildChartMargin(style), bottom: labelAngle !== 0 ? 40 : (style.marginBottom ?? 5) }}>
         {style.showGridLines !== false && !isSparkline && (
           <CartesianGrid
             strokeDasharray={style.gridDashArray || "3 3"}
@@ -106,7 +106,7 @@ export default function LineChartWidget({ widget }) {
         />
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && lineKeys.length > 1 && (
-          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
+          <Legend {...buildLegendProps(style, fontSize)} />
         )}
         {lineKeys.map((key, idx) => {
           const seriesColors = style.seriesColors || {};

@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
-import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps } from "../../utils/chartHelpers";
+import { getColor, formatNumber, buildTooltipStyle, buildLabelListProps, buildChartMargin, buildLegendProps } from "../../utils/chartHelpers";
 
 export default function AreaChartWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -75,7 +75,7 @@ export default function AreaChartWidget({ widget }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: labelAngle !== 0 ? 40 : 5 }}>
+      <AreaChart data={chartData} margin={{ ...buildChartMargin(style), bottom: labelAngle !== 0 ? 40 : (style.marginBottom ?? 5) }}>
         {style.showGridLines !== false && (
           <CartesianGrid strokeDasharray={style.gridDashArray || "3 3"} stroke={style.gridColor || "#e5e7eb"} />
         )}
@@ -92,7 +92,7 @@ export default function AreaChartWidget({ widget }) {
         />
         <Tooltip contentStyle={buildTooltipStyle(style)} formatter={(v) => formatNumber(v, style)} />
         {style.showLegend !== false && areaKeys.length > 1 && (
-          <Legend wrapperStyle={{ fontSize: fontSize - 1 }} verticalAlign={style.legendPosition === "top" ? "top" : "bottom"} layout={style.legendLayout || "horizontal"} />
+          <Legend {...buildLegendProps(style, fontSize)} />
         )}
         {areaKeys.map((key, idx) => {
           const seriesColors = style.seriesColors || {};

@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import useDashboardStore from "../../store/dashboardStore";
 import { filterData, aggregateData, applyGlobalFilters, applyCrossFilters } from "../../utils/dataProcessing";
+import { buildChartMargin } from "../../utils/chartHelpers";
 
 export default function WaterfallWidget({ widget }) {
   const { dataSources, currentDashboard, widgetFilterValues } = useDashboardStore();
@@ -61,7 +62,7 @@ export default function WaterfallWidget({ widget }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+      <BarChart data={chartData} margin={buildChartMargin(style, { top: 10 })}>
         {style.showGridLines !== false && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 11 }} />

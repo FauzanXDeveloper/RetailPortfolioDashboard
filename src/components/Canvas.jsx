@@ -18,6 +18,7 @@ export default function Canvas() {
   } = useDashboardStore();
 
   const widgets = currentDashboard.widgets || [];
+  const theme = currentDashboard.theme || {};
   const containerRef = useRef(null);
   const [width, setWidth] = useState(1200);
 
@@ -66,6 +67,27 @@ export default function Canvas() {
     [updateLayout]
   );
 
+  // Build background style from dashboard theme
+  const bgStyle = React.useMemo(() => {
+    if (!theme.bgType || theme.bgType === "default") return {};
+    if (theme.bgType === "solid") return { background: theme.bgColor || "#f9fafb" };
+    if (theme.bgType === "gradient") {
+      const dir = theme.gradientDirection || "to bottom";
+      const c1 = theme.gradientStart || "#667eea";
+      const c2 = theme.gradientEnd || "#764ba2";
+      return { background: `linear-gradient(${dir}, ${c1}, ${c2})` };
+    }
+    if (theme.bgType === "image" && theme.bgImage) {
+      return {
+        backgroundImage: `url(${theme.bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    }
+    return {};
+  }, [theme]);
+
   return (
     <div
       id="dashboard-canvas"
@@ -74,8 +96,9 @@ export default function Canvas() {
         containerRef.current = el;
       }}
       className={`flex-1 overflow-auto p-4 transition-colors ${
-        isOver ? "bg-blue-50" : "bg-gray-50"
-      }`}
+        isOver ? "ring-2 ring-blue-400 ring-inset" : ""
+      } ${(!theme.bgType || theme.bgType === "default") ? "bg-gray-50" : ""}`}
+      style={bgStyle}
     >
       {widgets.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-gray-400">

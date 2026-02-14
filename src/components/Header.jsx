@@ -7,7 +7,6 @@ import {
   Save,
   FolderOpen,
   Download,
-  Upload,
   Database,
   Search,
   X,
@@ -19,9 +18,9 @@ import {
   LogOut,
   Trash2,
   Share2,
+  Palette,
 } from "lucide-react";
 import useDashboardStore from "../store/dashboardStore";
-import { importDashboard } from "../utils/storage";
 import { exportAsJSON, exportAsImage, exportAsPDF } from "../utils/exportUtils";
 import GlobalFilterManager from "./modals/GlobalFilterManager";
 
@@ -34,10 +33,11 @@ export default function Header() {
     saveDashboard,
     loadDashboard,
     deleteDashboard,
-    importDashboardData,
+
     setGlobalFilter,
     clearGlobalFilters,
     setDataManagerOpen,
+    setDashboardTheme,
     environmentId,
     environmentName,
     leaveEnvironment,
@@ -51,6 +51,7 @@ export default function Header() {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [showFilterManager, setShowFilterManager] = useState(false);
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const titleRef = useRef(null);
   // eslint-disable-next-line no-unused-vars
   const _ = titleRef; // keep ref for future use
@@ -88,14 +89,7 @@ export default function Header() {
     setShowExportDropdown(false);
   };
 
-  const handleImport = async () => {
-    try {
-      const data = await importDashboard();
-      importDashboardData(data);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+
 
   const handleTitleKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -355,12 +349,6 @@ export default function Header() {
             )}
           </div>
           <button
-            onClick={handleImport}
-            className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors text-white"
-          >
-            <Upload size={14} /> Import
-          </button>
-          <button
             onClick={() => setDataManagerOpen(true)}
             className="flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium transition-colors"
           >
@@ -372,6 +360,26 @@ export default function Header() {
           >
             <Filter size={14} /> Manage Filters
           </button>
+
+          {/* Dashboard Theme Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <Palette size={14} /> Theme <ChevronDown size={12} />
+            </button>
+            {showThemeDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowThemeDropdown(false)} />
+                <DashboardThemePanel
+                  theme={currentDashboard.theme || {}}
+                  setDashboardTheme={setDashboardTheme}
+                  onClose={() => setShowThemeDropdown(false)}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -475,36 +483,34 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
 
   const MONTH_NAMES = React.useMemo(() => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], []);
 
-  const availableMonths = React.useMemo(() => {
-    if (!dateHierarchy) return [];
-    // Merge months across all selected years (or all years if none selected)
-    const selectedYears = df.selectedYears || [];
-    const yearsToScan = selectedYears.length > 0 ? selectedYears : Object.keys(dateHierarchy).map(Number);
-    const monthSet = new Set();
-    yearsToScan.forEach((y) => {
+  // Per-year month selections: { 2025: [0,1], 2024: [9,11] }
+  const yearMonths = df.yearMonths || {};
+
+  // Available months for each selected year (from the data)
+  const getMonthsForYear = React.useCallback((year) => {
+    if (!dateHierarchy || !dateHierarchy[year]) return [];
+    return Object.keys(dateHierarchy[year]).map(Number).sort((a, b) => a - b);
+  }, [dateHierarchy]);
+
+  // Recompute filter values from yearMonths map
+  const recomputeValues = React.useCallback((selectedYears, ym) => {
+    const newValues = [];
+    selectedYears.forEach((y) => {
       const yr = dateHierarchy[y];
-      if (yr) Object.keys(yr).forEach((m) => monthSet.add(Number(m)));
+      if (!yr) return;
+      const months = ym[y];
+      const monthsToScan = months && months.length > 0 ? months : Object.keys(yr).map(Number);
+      monthsToScan.forEach((m) => { if (yr[m]) newValues.push(...yr[m]); });
     });
-    return [...monthSet].sort((a, b) => a - b);
-  }, [dateHierarchy, df.selectedYears]);
+    return newValues;
+  }, [dateHierarchy]);
 
   const availableDates = React.useMemo(() => {
     if (!dateHierarchy) return [];
     const selectedYears = df.selectedYears || [];
-    const selectedMonths = df.selectedMonths || [];
-    if (selectedYears.length === 0 && selectedMonths.length === 0) return [];
-    const dates = [];
-    const yearsToScan = selectedYears.length > 0 ? selectedYears : Object.keys(dateHierarchy).map(Number);
-    yearsToScan.forEach((y) => {
-      const yr = dateHierarchy[y];
-      if (!yr) return;
-      const monthsToScan = selectedMonths.length > 0 ? selectedMonths : Object.keys(yr).map(Number);
-      monthsToScan.forEach((m) => {
-        if (yr[m]) dates.push(...yr[m]);
-      });
-    });
-    return dates.sort();
-  }, [dateHierarchy, df.selectedYears, df.selectedMonths]);
+    if (selectedYears.length === 0) return [];
+    return recomputeValues(selectedYears, yearMonths).sort();
+  }, [dateHierarchy, df.selectedYears, yearMonths, recomputeValues]);
 
   const updateFilter = (updates) => {
     const updated = (gf.dynamic || []).map((d) =>
@@ -523,41 +529,30 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
 
   const clearFilter = (e) => {
     e.stopPropagation();
-    updateFilter({ values: [], selectedYears: [], selectedMonths: [], selectedYear: null, selectedMonth: null });
+    updateFilter({ values: [], selectedYears: [], yearMonths: {}, selectedYear: null, selectedMonth: null, selectedMonths: [] });
   };
 
   // Toggle a year on/off in multi-select
   const toggleYear = (year) => {
     const current = df.selectedYears || [];
     const next = current.includes(year) ? current.filter((y) => y !== year) : [...current, year];
-    // Recompute values: all dates for selected years + selected months
-    const newValues = [];
-    const yearsToScan = next.length > 0 ? next : [];
-    const selectedMonths = df.selectedMonths || [];
-    yearsToScan.forEach((y) => {
-      const yr = dateHierarchy[y];
-      if (!yr) return;
-      const monthsToScan = selectedMonths.length > 0 ? selectedMonths : Object.keys(yr).map(Number);
-      monthsToScan.forEach((m) => { if (yr[m]) newValues.push(...yr[m]); });
-    });
-    updateFilter({ selectedYears: next, values: newValues });
+    // Remove yearMonths for deselected years
+    const newYM = { ...yearMonths };
+    if (!next.includes(year)) delete newYM[year];
+    const newValues = recomputeValues(next, newYM);
+    updateFilter({ selectedYears: next, yearMonths: newYM, values: newValues });
   };
 
-  // Toggle a month on/off in multi-select
-  const toggleMonth = (month) => {
-    const current = df.selectedMonths || [];
-    const next = current.includes(month) ? current.filter((m) => m !== month) : [...current, month];
-    // Recompute values: all dates for selected years + new selected months
-    const newValues = [];
+  // Toggle a month on/off for a specific year
+  const toggleMonthForYear = (year, month) => {
+    const currentMonths = yearMonths[year] || [];
+    const nextMonths = currentMonths.includes(month)
+      ? currentMonths.filter((m) => m !== month)
+      : [...currentMonths, month];
+    const newYM = { ...yearMonths, [year]: nextMonths };
     const selectedYears = df.selectedYears || [];
-    const yearsToScan = selectedYears.length > 0 ? selectedYears : Object.keys(dateHierarchy).map(Number);
-    yearsToScan.forEach((y) => {
-      const yr = dateHierarchy[y];
-      if (!yr) return;
-      const monthsToScan = next.length > 0 ? next : Object.keys(yr).map(Number);
-      monthsToScan.forEach((m) => { if (yr[m]) newValues.push(...yr[m]); });
-    });
-    updateFilter({ selectedMonths: next, values: newValues });
+    const newValues = recomputeValues(selectedYears, newYM);
+    updateFilter({ yearMonths: newYM, values: newValues });
   };
 
   // Badge text
@@ -565,15 +560,17 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
     if (!hasValues) return null;
     if (df.mode === "date_hierarchy") {
       const sy = df.selectedYears || [];
-      const sm = df.selectedMonths || [];
-      if (sy.length > 0 && sm.length > 0) {
-        return `${sy.join(",")} · ${sm.map((m) => MONTH_NAMES[m]).join(",")}`;
-      }
-      if (sy.length > 0) return sy.join(", ");
-      return df.values.length;
+      if (sy.length === 0) return df.values.length;
+      // Show per-year month summary
+      const parts = sy.map((y) => {
+        const months = yearMonths[y] || [];
+        if (months.length === 0) return String(y);
+        return `${y}(${months.map((m) => MONTH_NAMES[m]).join(",")})`;
+      });
+      return parts.join(" · ");
     }
     return df.values.length;
-  }, [df, hasValues, MONTH_NAMES]);
+  }, [df, hasValues, MONTH_NAMES, yearMonths]);
 
   return (
     <div className="relative">
@@ -636,32 +633,37 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
                   </div>
                 </div>
 
-                {/* Month Multi-Select — always show if years available */}
-                {availableMonths.length > 0 && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Month {(df.selectedMonths || []).length > 0 && <span className="text-brand-600">({(df.selectedMonths || []).length})</span>}
-                    </label>
-                    <div className="grid grid-cols-4 gap-1">
-                      {availableMonths.map((m) => {
-                        const isSelected = (df.selectedMonths || []).includes(m);
-                        return (
-                          <button
-                            key={m}
-                            onClick={() => toggleMonth(m)}
-                            className={`px-1.5 py-1 rounded text-xs font-medium transition-colors ${
-                              isSelected
-                                ? "bg-brand-600 text-white"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            }`}
-                          >
-                            {MONTH_NAMES[m]}
-                          </button>
-                        );
-                      })}
+                {/* Month Multi-Select — PER YEAR, shown below each selected year */}
+                {(df.selectedYears || []).length > 0 && (df.selectedYears || []).map((y) => {
+                  const monthsForYear = getMonthsForYear(y);
+                  const selectedForYear = yearMonths[y] || [];
+                  if (monthsForYear.length === 0) return null;
+                  return (
+                    <div key={`months-${y}`}>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                        {y} Months {selectedForYear.length > 0 && <span className="text-brand-600">({selectedForYear.length})</span>}
+                      </label>
+                      <div className="grid grid-cols-4 gap-1">
+                        {monthsForYear.map((m) => {
+                          const isSelected = selectedForYear.includes(m);
+                          return (
+                            <button
+                              key={m}
+                              onClick={() => toggleMonthForYear(y, m)}
+                              className={`px-1.5 py-1 rounded text-xs font-medium transition-colors ${
+                                isSelected
+                                  ? "bg-brand-600 text-white"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              }`}
+                            >
+                              {MONTH_NAMES[m]}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })}
 
                 {/* Date checkboxes — show if any years or months selected */}
                 {availableDates.length > 0 && (
@@ -701,7 +703,6 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
                     </div>
                   </div>
                 )}
-
                 {/* Clear */}
                 {hasValues && (
                   <button
@@ -752,6 +753,165 @@ function DynamicFilterDropdown({ filter, hasValues, gf, setGlobalFilter }) {
             )}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Dashboard background theme picker panel.
+ */
+const GRADIENT_PRESETS = [
+  { label: "Sunset", start: "#667eea", end: "#764ba2", dir: "to bottom right" },
+  { label: "Ocean", start: "#2193b0", end: "#6dd5ed", dir: "to right" },
+  { label: "Warm", start: "#f093fb", end: "#f5576c", dir: "to right" },
+  { label: "Forest", start: "#11998e", end: "#38ef7d", dir: "to right" },
+  { label: "Night", start: "#0f0c29", end: "#302b63", dir: "to bottom" },
+  { label: "Sky", start: "#e0eafc", end: "#cfdef3", dir: "to bottom" },
+  { label: "Peach", start: "#ffecd2", end: "#fcb69f", dir: "to right" },
+  { label: "Slate", start: "#1e293b", end: "#334155", dir: "to bottom" },
+];
+
+function DashboardThemePanel({ theme, setDashboardTheme, onClose }) {
+  const bgType = theme.bgType || "default";
+
+  return (
+    <div className="absolute right-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-3 space-y-3">
+      <label className="block text-xs font-bold text-gray-700">Dashboard Background</label>
+
+      {/* Type selector */}
+      <div className="flex gap-1">
+        {[
+          { value: "default", label: "Default" },
+          { value: "solid", label: "Solid" },
+          { value: "gradient", label: "Gradient" },
+        ].map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setDashboardTheme({ bgType: opt.value })}
+            className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+              bgType === opt.value
+                ? "bg-brand-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Solid Color */}
+      {bgType === "solid" && (
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-gray-600">Color</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={theme.bgColor || "#f9fafb"}
+              onChange={(e) => setDashboardTheme({ bgColor: e.target.value })}
+              className="w-8 h-8 rounded cursor-pointer border-0"
+            />
+            <input
+              type="text"
+              value={theme.bgColor || "#f9fafb"}
+              onChange={(e) => setDashboardTheme({ bgColor: e.target.value })}
+              className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 outline-none font-mono"
+            />
+          </div>
+          {/* Quick solid colors */}
+          <div className="flex flex-wrap gap-1">
+            {["#f9fafb", "#ffffff", "#f1f5f9", "#e2e8f0", "#fef3c7", "#ecfdf5", "#eff6ff", "#faf5ff", "#1e293b", "#0f172a"].map((c) => (
+              <button
+                key={c}
+                onClick={() => setDashboardTheme({ bgColor: c })}
+                className={`w-6 h-6 rounded-md border-2 transition-all ${theme.bgColor === c ? "border-brand-500 scale-110" : "border-gray-200 hover:border-gray-400"}`}
+                style={{ backgroundColor: c }}
+                title={c}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gradient */}
+      {bgType === "gradient" && (
+        <div className="space-y-2">
+          {/* Preset gradients */}
+          <label className="block text-xs font-medium text-gray-600">Presets</label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {GRADIENT_PRESETS.map((g) => (
+              <button
+                key={g.label}
+                onClick={() => setDashboardTheme({
+                  gradientStart: g.start,
+                  gradientEnd: g.end,
+                  gradientDirection: g.dir,
+                })}
+                className="group flex flex-col items-center gap-0.5"
+                title={g.label}
+              >
+                <div
+                  className="w-full h-5 rounded border border-gray-200 group-hover:ring-2 ring-brand-400 transition-all"
+                  style={{ background: `linear-gradient(${g.dir}, ${g.start}, ${g.end})` }}
+                />
+                <span className="text-[8px] text-gray-500">{g.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Custom gradient colors */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-[10px] text-gray-500 mb-0.5">Start</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={theme.gradientStart || "#667eea"} onChange={(e) => setDashboardTheme({ gradientStart: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0" />
+                <input type="text" value={theme.gradientStart || "#667eea"} onChange={(e) => setDashboardTheme({ gradientStart: e.target.value })} className="w-full text-[10px] border border-gray-200 rounded px-1.5 py-1 font-mono outline-none" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-[10px] text-gray-500 mb-0.5">End</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={theme.gradientEnd || "#764ba2"} onChange={(e) => setDashboardTheme({ gradientEnd: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-0" />
+                <input type="text" value={theme.gradientEnd || "#764ba2"} onChange={(e) => setDashboardTheme({ gradientEnd: e.target.value })} className="w-full text-[10px] border border-gray-200 rounded px-1.5 py-1 font-mono outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Direction */}
+          <div>
+            <label className="block text-[10px] text-gray-500 mb-0.5">Direction</label>
+            <select
+              className="w-full text-xs border border-gray-200 rounded px-2 py-1 outline-none"
+              value={theme.gradientDirection || "to bottom"}
+              onChange={(e) => setDashboardTheme({ gradientDirection: e.target.value })}
+            >
+              <option value="to bottom">↓ Top to Bottom</option>
+              <option value="to right">→ Left to Right</option>
+              <option value="to bottom right">↘ Diagonal</option>
+              <option value="to bottom left">↙ Diagonal Left</option>
+              <option value="to top">↑ Bottom to Top</option>
+              <option value="to top right">↗ Bottom-Left to Top-Right</option>
+            </select>
+          </div>
+
+          {/* Preview */}
+          <div
+            className="h-8 rounded-lg border border-gray-200"
+            style={{
+              background: `linear-gradient(${theme.gradientDirection || "to bottom"}, ${theme.gradientStart || "#667eea"}, ${theme.gradientEnd || "#764ba2"})`,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Reset */}
+      {bgType !== "default" && (
+        <button
+          onClick={() => setDashboardTheme({ bgType: "default", bgColor: undefined, gradientStart: undefined, gradientEnd: undefined, gradientDirection: undefined })}
+          className="w-full text-xs text-red-500 hover:text-red-700 py-1"
+        >
+          Reset to Default
+        </button>
       )}
     </div>
   );

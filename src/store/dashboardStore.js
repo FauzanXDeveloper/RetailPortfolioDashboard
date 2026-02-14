@@ -282,6 +282,15 @@ const useDashboardStore = create((set, get) => {
       currentDashboard: { ...s.currentDashboard, name },
     })),
 
+  /** Update dashboard theme (background, gradient, etc.) */
+  setDashboardTheme: (themeUpdates) =>
+    set((s) => ({
+      currentDashboard: {
+        ...s.currentDashboard,
+        theme: { ...(s.currentDashboard.theme || {}), ...themeUpdates },
+      },
+    })),
+
   /** Set global filter value */
   setGlobalFilter: (key, value) =>
     set((s) => ({
